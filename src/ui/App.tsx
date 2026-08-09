@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import { generate } from '../core/generate'
+import { decodeShare, encodeShare } from '../core/share'
 import type { Filters } from '../core/types'
 import '../styles/app.css'
 import FilterBar from './FilterBar'
@@ -18,9 +19,14 @@ const TABS: { value: View; label: string }[] = [
 ]
 
 export default function App() {
-  const [seed, setSeed] = useState<number | null>(null)
-  const [filters, setFilters] = useState<Filters>({})
+  // Bootstrap from a share link on first mount: a valid ?seed=&subject=
+  // etc. query string reproduces the exact shared prompt (generate() is
+  // memoized on seed+filters, so decoding the same pair renders a
+  // string-identical result). Absent/invalid query -> normal empty state.
+  const [seed, setSeed] = useState<number | null>(() => decodeShare(window.location.search)?.seed ?? null)
+  const [filters, setFilters] = useState<Filters>(() => decodeShare(window.location.search)?.filters ?? {})
   const [view, setView] = useState<View>('generator')
+  const [linkCopied, setLinkCopied] = useState(false)
 
   // Pure downstream of seed + filters — generate() itself never touches
   // Math.random; randomness lives only at the UI boundary below.
@@ -30,6 +36,22 @@ export default function App() {
     // Randomness lives here, at the UI boundary — everything downstream
     // (generate(), expand()) is a pure function of the seed it's given.
     setSeed(Math.floor(Math.random() * 2 ** 31))
+    setLinkCopied(false)
+  }
+
+  async function handleCopyShareLink() {
+    if (seed == null) return
+    const qs = encodeShare({ seed, filters })
+    const url = `${window.location.origin}${window.location.pathname}?${qs}`
+    const clipboard = navigator.clipboard
+    if (clipboard?.writeText) {
+      try {
+        await clipboard.writeText(url)
+      } catch {
+        // Write can fail (permissions, unsupported); still surface feedback.
+      }
+    }
+    setLinkCopied(true)
   }
 
   return (
@@ -58,6 +80,13 @@ export default function App() {
             <SurpriseHero onSpark={handleSpark} />
             <FilterBar filters={filters} onChange={setFilters} />
             <PromptCard prompt={prompt} />
+            {prompt && (
+              <div className="share-link-row">
+                <button type="button" className="share-link-button" onClick={handleCopyShareLink}>
+                  {linkCopied ? 'Link copied!' : 'Copy share link \u{1F517}'}
+                </button>
+              </div>
+            )}
           </>
         )}
         {view === 'scout' && <BrainScoutView />}

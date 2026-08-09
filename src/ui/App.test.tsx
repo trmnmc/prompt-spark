@@ -2,6 +2,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { generate } from '../core/generate'
 import App from './App'
 
 let container: HTMLDivElement
@@ -166,5 +167,53 @@ describe('App shell', () => {
     expect(allChip.getAttribute('aria-pressed')).toBe('true')
     // difficulty filter is untouched by the subject toggle
     expect(hardChip.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('bootstraps from a share-link URL on mount, rendering the string-identical shared prompt', () => {
+    // Replace the default-mounted app (empty search) with one mounted
+    // against a stubbed share URL, per jsdom convention: set location via
+    // history.replaceState before the render that reads it.
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+
+    history.replaceState(null, '', '/?seed=123&subject=law')
+
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    act(() => {
+      root = createRoot(container)
+      root.render(<App />)
+    })
+
+    const card = container.querySelector('.prompt-card')
+    expect(card).not.toBeNull()
+    expect(textOf(card!.querySelector('.prompt-text'))).toBe(generate(123, { subject: 'law' }).text)
+
+    // Restore a plain URL so later tests see the normal empty-search state.
+    history.replaceState(null, '', '/')
+  })
+
+  it('Copy share link writes a URL containing seed= to the clipboard and flips to Link copied!', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+
+    click(container.querySelector('.surprise-hero'))
+    const shareButton = container.querySelector('.share-link-button') as HTMLButtonElement
+    expect(shareButton).not.toBeNull()
+    expect(textOf(shareButton)).toBe('Copy share link \u{1F517}')
+
+    await act(async () => {
+      shareButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(writeText).toHaveBeenCalledTimes(1)
+    const written = writeText.mock.calls[0][0] as string
+    expect(written).toContain('seed=')
+    expect(textOf(shareButton)).toBe('Link copied!')
   })
 })
