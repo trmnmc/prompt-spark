@@ -1,1 +1,371 @@
-{"items": []}
+{
+ "items": [
+  {
+   "id": "T-001",
+   "title": "Scaffold + frozen Layer 1 contract (Vite app, core types, data schema, token CSS)",
+   "kind": "feature",
+   "priority": 1,
+   "value": "H",
+   "effort": "M",
+   "deps": [],
+   "files_hint": [
+    "package.json",
+    "vite.config.ts",
+    "index.html",
+    "src/main.tsx",
+    "src/core/types.ts",
+    "src/data/schema.ts",
+    "src/styles/tokens.css"
+   ],
+   "acceptance": "Dev server boots a page titled Prompt Spark with the token palette applied, and the frozen contract modules (PRNG/hash signatures, DIFFICULTY_TO_TIME map with easy='1\u20132 hours'/medium='an evening or two (3\u20136 hours)'/hard='a weekend+ (10+ hours)', LADDER_RUNGS tuple Weekend/Week/Month/Moonshot, Template/Prompt shapes, pack entry schema with twist pools, CSS class vocabulary prompt-card/ladder-rung/remix-card/fav-item) typecheck cleanly.",
+   "packages": [
+    "react",
+    "react-dom",
+    "vite",
+    "@vitejs/plugin-react",
+    "typescript",
+    "vitest",
+    "jsdom"
+   ],
+   "notes": "Layer 1 is frozen after this item ships \u2014 no other item may edit these files. All Vitest/jsdom devDeps land here so no later item touches package.json.",
+   "status": "todo",
+   "attempts": 0,
+   "route_class": "core",
+   "model": "fable"
+  },
+  {
+   "id": "T-002",
+   "title": "Real Estate + Law subject packs (10+ templates each)",
+   "kind": "feature",
+   "priority": 1,
+   "value": "H",
+   "effort": "M",
+   "deps": [
+    "T-001"
+   ],
+   "files_hint": [
+    "src/data/realEstate.ts",
+    "src/data/law.ts"
+   ],
+   "acceptance": "Each of the two packs exports >=10 schema-conformant templates, every template has fill-in variable slots, a twist pool, and difficulty metadata, with all three difficulty tiers represented in each pack.",
+   "packages": [],
+   "notes": "Conform strictly to src/data/schema.ts. Runs in parallel with T-003.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-003",
+   "title": "Finance + Science subject packs (10+ templates each)",
+   "kind": "feature",
+   "priority": 1,
+   "value": "H",
+   "effort": "M",
+   "deps": [
+    "T-001"
+   ],
+   "files_hint": [
+    "src/data/finance.ts",
+    "src/data/science.ts"
+   ],
+   "acceptance": "Each of the two packs exports >=10 schema-conformant templates, every template has fill-in variable slots, a twist pool, and difficulty metadata, with all three difficulty tiers represented in each pack.",
+   "packages": [],
+   "notes": "Conform strictly to src/data/schema.ts. Runs in parallel with T-002.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-004",
+   "title": "Pack registry + per-subject lens lists + pack validity tests",
+   "kind": "feature",
+   "priority": 1,
+   "value": "H",
+   "effort": "S",
+   "deps": [
+    "T-002",
+    "T-003"
+   ],
+   "files_hint": [
+    "src/data/index.ts",
+    "src/data/packs.test.ts"
+   ],
+   "acceptance": "A single registry exposes all four packs plus per-subject lens lists, and tests pin >=10 templates per pack, non-empty template sets for every subject x difficulty combo, and schema validity of every entry.",
+   "packages": [],
+   "notes": "Tests ship with the module per project convention.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-005",
+   "title": "Deterministic core: mulberry32/djb2 RNG + generate(seed, filters) with tests",
+   "kind": "feature",
+   "priority": 1,
+   "value": "H",
+   "effort": "M",
+   "deps": [
+    "T-004"
+   ],
+   "files_hint": [
+    "src/core/rng.ts",
+    "src/core/generate.ts",
+    "src/core/generate.test.ts"
+   ],
+   "acceptance": "generate(seed, filters) is pure and string-identical for identical seed+filters, always includes a twist, honors conjunctive subject AND difficulty filtering for every subject x difficulty combo (empty filters = all), and emits the fixed difficulty-to-time labels.",
+   "packages": [],
+   "notes": "Implements the exact signatures frozen in src/core/types.ts; exposes djb2 hash used for prompt ids hash(seed+templateId).",
+   "status": "todo",
+   "attempts": 0,
+   "route_class": "core",
+   "model": "fable"
+  },
+  {
+   "id": "T-006",
+   "title": "Brain Scout core: 4-rung ladder + 3 remixes with tests",
+   "kind": "feature",
+   "priority": 1,
+   "value": "H",
+   "effort": "M",
+   "deps": [
+    "T-005"
+   ],
+   "files_hint": [
+    "src/core/brainScout.ts",
+    "src/core/brainScout.test.ts"
+   ],
+   "acceptance": "For any seed phrase, output is exactly 4 rungs in Weekend/Week/Month/Moonshot order each containing the seed phrase verbatim (tests cover mixed-case multi-word and punctuation-heavy seeds), plus exactly 3 remixes with distinct subject lenses, with ids hash('scout:'+seedPhrase+rung-or-lens-label).",
+   "packages": [],
+   "notes": "Uses rng/hash from T-005 and lens lists from src/data/index.ts.",
+   "status": "todo",
+   "attempts": 0,
+   "route_class": "core",
+   "model": "fable"
+  },
+  {
+   "id": "T-007",
+   "title": "Favorites store on localStorage with dedupe/remove-one semantics + jsdom tests",
+   "kind": "feature",
+   "priority": 1,
+   "value": "H",
+   "effort": "M",
+   "deps": [
+    "T-005"
+   ],
+   "files_hint": [
+    "src/state/favorites.ts",
+    "src/state/favorites.test.ts"
+   ],
+   "acceptance": "Favorites persist under key prompt-spark:favorites:v1 across reload; adding an already-saved id is a no-op (deduped by id) and remove deletes exactly one entry.",
+   "packages": [],
+   "notes": "Single shared save path used later by both prompt cards and Brain Scout items; framework-agnostic module with a React subscription hook.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-008",
+   "title": "Share-link core: URL param encode/decode with roundtrip tests",
+   "kind": "feature",
+   "priority": 2,
+   "value": "M",
+   "effort": "S",
+   "deps": [
+    "T-001"
+   ],
+   "files_hint": [
+    "src/core/share.ts",
+    "src/core/share.test.ts"
+   ],
+   "acceptance": "Encoding any seed+filters state to URL params and decoding it back yields an identical state (roundtrip equality), including empty-filter and all-filter cases.",
+   "packages": [],
+   "notes": "Pure module, no DOM; UI bootstrap wiring is deferred to T-013.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-009",
+   "title": "App shell: tab navigation, FilterBar, mobile-first app.css, compiling view stubs",
+   "kind": "feature",
+   "priority": 2,
+   "value": "H",
+   "effort": "M",
+   "deps": [
+    "T-005"
+   ],
+   "files_hint": [
+    "src/ui/App.tsx",
+    "src/ui/FilterBar.tsx",
+    "src/styles/app.css",
+    "src/ui/SurpriseHero.tsx",
+    "src/ui/PromptCard.tsx",
+    "src/ui/BrainScoutView.tsx",
+    "src/ui/FavoritesView.tsx"
+   ],
+   "acceptance": "The app renders with working subject AND difficulty filter chips (conjunctive, empty = all) and navigable Generator/Brain Scout/Favorites sections at 375px width with the hero button as the visually largest element.",
+   "packages": [],
+   "notes": "Creates SurpriseHero/PromptCard/BrainScoutView/FavoritesView as minimal typed stubs so the app compiles; later items own those files exclusively and this item's files are not touched again in parallel waves.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-010",
+   "title": "SurpriseHero + PromptCard: generate, copy, save, seed-as-serial display",
+   "kind": "feature",
+   "priority": 2,
+   "value": "H",
+   "effort": "M",
+   "deps": [
+    "T-009",
+    "T-007"
+   ],
+   "files_hint": [
+    "src/ui/SurpriseHero.tsx",
+    "src/ui/PromptCard.tsx"
+   ],
+   "acceptance": "Clicking Surprise me renders a prompt card (class prompt-card) showing the serial (e.g. 'No A4F2') whose Copy button puts the full prompt text on the clipboard and whose Save button adds it to favorites by id hash(seed+templateId).",
+   "packages": [],
+   "notes": "Surprise me draws a fresh random seed then calls the pure generate; card is a pure render of the Prompt shape.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-011",
+   "title": "BrainScoutView: seed phrase input, ladder rungs, remixes, copy/save",
+   "kind": "feature",
+   "priority": 2,
+   "value": "H",
+   "effort": "M",
+   "deps": [
+    "T-006",
+    "T-009",
+    "T-007"
+   ],
+   "files_hint": [
+    "src/ui/BrainScoutView.tsx"
+   ],
+   "acceptance": "Entering a seed phrase renders 4 ladder-rung cards in Weekend/Week/Month/Moonshot order and 3 remix-cards, each with working copy and save controls that persist through the shared favorites store.",
+   "packages": [],
+   "notes": "Uses frozen classes ladder-rung and remix-card; scout ids come from brainScout core, not recomputed in UI.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-012",
+   "title": "FavoritesView: list, copy, remove-one, empty state",
+   "kind": "feature",
+   "priority": 2,
+   "value": "H",
+   "effort": "S",
+   "deps": [
+    "T-007",
+    "T-009"
+   ],
+   "files_hint": [
+    "src/ui/FavoritesView.tsx"
+   ],
+   "acceptance": "Saved prompts and scout items appear as fav-item entries after a page reload, each with a copy button and a remove button that deletes exactly that one entry.",
+   "packages": [],
+   "notes": "Pure consumer of the favorites store subscription hook.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-013",
+   "title": "Share-link URL bootstrap wiring",
+   "kind": "feature",
+   "priority": 3,
+   "value": "M",
+   "effort": "S",
+   "deps": [
+    "T-008",
+    "T-010"
+   ],
+   "files_hint": [
+    "src/ui/App.tsx"
+   ],
+   "acceptance": "Opening a URL containing share params renders the string-identical prompt (same seed+filters) that was showing when the share link was created, and each generated prompt exposes a copyable share link.",
+   "packages": [],
+   "notes": "Delighter; only starts after must-haves T-001..T-012 are verified. Sole owner of App.tsx in this wave.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-014",
+   "title": "ConfettiBurst + StatsBadge ('sparked today' streak)",
+   "kind": "polish",
+   "priority": 4,
+   "value": "L",
+   "effort": "M",
+   "deps": [
+    "T-010"
+   ],
+   "files_hint": [
+    "src/ui/ConfettiBurst.tsx",
+    "src/ui/StatsBadge.tsx",
+    "src/ui/SurpriseHero.tsx"
+   ],
+   "acceptance": "Generating a prompt fires a confetti burst (suppressed under prefers-reduced-motion) and increments a visible 'sparked today' streak badge.",
+   "packages": [],
+   "notes": "Confetti styles live inside the components (no app.css edits) to stay disjoint from T-015 in the same wave; streak stored under a separate localStorage key, never touching prompt-spark:favorites:v1.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-015",
+   "title": "Dark mode + favorites markdown export",
+   "kind": "polish",
+   "priority": 4,
+   "value": "L",
+   "effort": "M",
+   "deps": [
+    "T-012",
+    "T-013"
+   ],
+   "files_hint": [
+    "src/core/markdown.ts",
+    "src/ui/FavoritesView.tsx",
+    "src/styles/app.css"
+   ],
+   "acceptance": "The app follows prefers-color-scheme dark using token values without visual regressions, and an Export button in Favorites downloads a markdown file listing every saved item.",
+   "packages": [],
+   "notes": "Dark values already exist as custom properties in frozen tokens.css; app.css only switches which tokens apply. markdown.ts is pure and unit-testable inline with this item.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  },
+  {
+   "id": "T-016",
+   "title": "Integration ship gate: full suite green + must-have smoke pass + README",
+   "kind": "test",
+   "priority": 2,
+   "value": "H",
+   "effort": "M",
+   "deps": [
+    "T-010",
+    "T-011",
+    "T-012",
+    "T-013",
+    "T-014",
+    "T-015"
+   ],
+   "files_hint": [
+    "README.md",
+    "src/integration.test.ts"
+   ],
+   "acceptance": "From a clean install and production build, every spec must-have (determinism, pack sizes, conjunctive filtering, clipboard, favorites persistence semantics, Brain Scout rung/remix contract) is demonstrably working end to end with the entire test suite passing.",
+   "packages": [],
+   "notes": "Only item allowed to add cross-module integration tests; also writes user-facing README with feature tour. Fix-forward any gaps found here as part of this item if trivial, otherwise file fixes.",
+   "status": "todo",
+   "attempts": 0,
+   "model": "sonnet"
+  }
+ ]
+}
