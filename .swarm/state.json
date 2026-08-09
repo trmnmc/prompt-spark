@@ -3,7 +3,7 @@
  "project_dir": "/Users/truman/Projects/prompt-spark",
  "created_at": "2026-08-09T02:37:00-04:00",
  "phase": "BUILD",
- "cycle": 3,
+ "cycle": 4,
  "run_cmd": "npm run dev -- --port 5199 --strictPort",
  "test_cmd": "npx vitest run",
  "preview": {
@@ -33,14 +33,14 @@
  "counters": {
   "consecutive_no_value": 0,
   "consecutive_failures": 0,
-  "k_current": 3,
-  "wave_streak": 1,
+  "k_current": 4,
+  "wave_streak": 0,
   "window_tokens_attributed": 0
  },
  "last_cycle": {
-  "n": 3,
-  "work": "build-wave T-001 + look pass",
-  "outcome": "1 verified, look clean",
+  "n": 4,
+  "work": "build-wave T-002 T-003 T-008",
+  "outcome": "3 verified",
   "commit": ""
  },
  "qa": {

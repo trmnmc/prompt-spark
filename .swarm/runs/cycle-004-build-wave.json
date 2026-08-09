@@ -1,0 +1,121 @@
+{
+  "summary": "Parallel feature builders in isolated worktrees; returns claims for conductor verification",
+  "agentCount": 3,
+  "logs": [
+    "wave @ 2026-08-09T03:13:30-04:00 [T-002 \"Real Estate + Law subject packs (10+ templates each)\" (sonnet/M), T-003 \"Finance + Science subject packs (10+ templates each)\" (sonnet/M), T-008 \"Share-link core: URL param encode/decode with roundtrip tests\" (sonnet/S)]"
+  ],
+  "result": {
+    "wave": [
+      {
+        "itemId": "T-002",
+        "status": "done",
+        "branch": "wave-300400-T-002",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-002.mgTeRb",
+        "files_changed": [
+          "src/data/realEstate.ts",
+          "src/data/law.ts"
+        ],
+        "summary": "Provisioned an isolated worktree/branch off the target repo (both derivation asserts passed: git-common-dir resolves into prompt-spark/.git, .swarm/SPEC.md present). Read the frozen contract in src/core/types.ts and src/data/schema.ts, then wrote two new data files, each a named `export const pack: SubjectPack`, subject 'realEstate' and 'law' respectively. Each pack has 12 curated templates (buffer above the >=10 minimum), evenly split 4 easy / 4 medium / 4 hard so all three difficulty tiers are represented in each pack, every {slot} placeholder in `text` resolves 1:1 to a key in `vars` with >=3 options per slot, every template carries >=2 twists, and each pack exposes 5 Brain Scout lenses (>=4 required). Real Estate covers rent-vs-buy calculators, neighborhood scorecards, renovation ROI, climate-risk overlays, flip modeling, etc. Law covers renter-rights/lease-clause explainers, security-deposit and small-claims prep, contract automation, compliance checklists, and a legal-doc plain-English translator -- explicitly framed as practical builder tools, not legal-advice engines. All prompts are self-contained, client-side-buildable ideas. Verified with a standalone tsx script that runs schema.ts's real `validatePack()` (zero violations for both packs) plus extra checks for the conductor's stricter bar (twists>=2, vars slots>=3 options, id prefixes, placeholder/vars key parity, all-three-difficulties-present) -- all passed. Also ran `npx tsc -b` (via a temporary node_modules symlink to the conductor-preinstalled dependencies in the main repo, removed before committing -- no manifest/lockfile touched) with zero type errors, and `npx vitest run`, which reports \"No test files found, exiting with code 0\" since vitest is configured with passWithNoTests:true and no test location exists inside my file scope (src/data/realEstate.ts and src/data/law.ts only) -- per the task instructions I did not create an out-of-scope test file, and noted this here. Reverted incidental .tsbuild/*.tsbuildinfo churn from running tsc so only the two in-scope files are part of the commit; working tree is clean after commit d2dfcfb on branch wave-300400-T-002.",
+        "self_test_output": "$ npx vitest run\n RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-002.mgTeRb\n\nNo test files found, exiting with code 0\n\ninclude: src/**/*.test.ts, src/**/*.test.tsx\nexclude:  **/node_modules/**, **/.git/**\n\n---EXIT 0---\n\n(supplementary, since scope has no test location: ran a standalone verification script exercising schema.ts's real validatePack() against both packs)\n=== realEstate === templates: 12, lenses: 5, difficulties present: [easy, medium, hard], schema violations: [], extra-check errors: []\n=== law === templates: 12, lenses: 5, difficulties present: [easy, medium, hard], schema violations: [], extra-check errors: []\nOVERALL PASS: true\n\n(supplementary: npx tsc -b -> exit 0, no type errors)"
+      },
+      {
+        "itemId": "T-003",
+        "status": "done",
+        "branch": "wave-300400-T-003",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-003.Tvln6s",
+        "files_changed": [
+          "src/data/finance.ts",
+          "src/data/science.ts"
+        ],
+        "summary": "Built the Finance and Science SubjectPack files exactly conforming to the frozen contracts in src/core/types.ts and src/data/schema.ts (each exports `export const pack: SubjectPack`). Finance pack: 12 templates (fin-01..fin-12) covering budget-tracker personalities, spending-habit roasters, subscription graveyards, round-up piggy banks, dividend snowball simulators, bill-split drama meters, latte-factor calculators, emergency-fund thermometers, debt-payoff races, physics-based envelope budgeting, family chore-currency economies, and a satirical \"financial astrology\" generator — explicitly framed as playful toys, never investment advice. Science pack: 12 templates (sci-01..sci-12) covering orbital sandboxes, kitchen-chemistry loggers, plant-growth time-lapses, periodic-table trading cards, predator-prey ecosystem sims, constellation storytellers, genetics critter breeders, biodiversity loggers, a device-motion-sensor seismograph, a physics playground, a volcano pressure simulator, and a mic-based DIY oscilloscope. Both packs: all three difficulty tiers represented (4 easy/4 medium/4 hard each), every {slot} placeholder in `text` resolves to a `vars` entry with >=3 options, every template carries >=2 twists (most 3), and each pack ships 6 lenses (>=4 required) as short noun phrases for Brain Scout remixes. Verified with a temporary (uncommitted) vitest file exercising the frozen `validatePack()` from schema.ts plus additional checks for difficulty coverage, lens count, twist count, and slot/vars consistency — all passed, then deleted before commit so no out-of-scope test file was added (my file scope is only the two data files; no test location was in scope). `npx tsc -b` is clean (no type errors) and `npx vitest run` is green. Did not touch package.json/lockfiles; symlinked node_modules from the origin repo only to run local verification (not committed, worktree-local). Reverted incidental .tsbuild/*.tsbuildinfo changes produced by running tsc, since those files are outside my file scope. Committed only src/data/finance.ts and src/data/science.ts on the isolated wave branch; working tree is clean.",
+        "self_test_output": " RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-003.Tvln6s\n\nNo test files found, exiting with code 0\n\ninclude: src/**/*.test.ts, src/**/*.test.tsx\nexclude:  **/node_modules/**, **/.git/**\n\n(above is the real `npx vitest run` output on the final committed tree — no test files exist in scope, and vitest.config's passWithNoTests:true makes this a clean pass, exit 0)\n\nPrior to removing the temporary verification file, the same command produced:\n RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-003.Tvln6s\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  03:17:46\n   Duration  465ms (transform 30ms, setup 0ms, import 41ms, tests 4ms, environment 337ms)\n\n(2 tests: one per pack, asserting validatePack()===[], >=10 templates, all 3 difficulties present, >=4 lenses, >=2 twists/template, >=3 var options/slot, and every {slot} in text resolvable from vars)\n\n`npx tsc -b` produced no output (clean typecheck)."
+      },
+      {
+        "itemId": "T-008",
+        "status": "done",
+        "branch": "wave-300400-T-008",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-008.YnYgSt",
+        "files_changed": [
+          "src/core/share.ts",
+          "src/core/share.test.ts"
+        ],
+        "summary": "Provisioned an isolated worktree/branch derived from /Users/truman/Projects/prompt-spark (both derivation asserts passed: git-common-dir resolved into the target's .git, .swarm/SPEC.md present). Read the frozen src/core/types.ts contract (Subject, Difficulty, Filters). Implemented src/core/share.ts: pure module (no DOM/window), encodeShare({seed, filters}) builds a URLSearchParams-style query string (e.g. 'seed=123&subject=law&difficulty=easy'), omitting absent filter keys entirely. decodeShare(qs) parses back to {seed, filters} | null: returns null on missing/empty seed, non-integer seed (regex + Number.isSafeInteger check), or on an unknown subject/difficulty value — chosen behavior is outright rejection (null) rather than silent stripping, and this choice is documented in comments and covered by dedicated tests. Wrote src/core/share.test.ts (vitest) with 18 cases: roundtrip equality for empty/subject-only/difficulty-only/both-filters states, roundtrip for every individual subject and difficulty enum value, zero and negative seeds, an explicit encodeShare format check, and malformed/unknown-enum inputs all returning null. Needed to run `npm ci` first since the worktree had no node_modules (fresh worktree, gitignored dir) — verified package-lock.json's checksum was unchanged before and after, so no manifest/lockfile was touched. Also ran `npx tsc -b` to typecheck (clean, exit 0) but reverted the two tracked .tsbuild/*.tsbuildinfo cache files it touched as a side effect, since they're outside my file scope. Committed only src/core/share.ts and src/core/share.test.ts on branch wave-300400-T-008; working tree is otherwise clean.",
+        "self_test_output": " RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-008.YnYgSt\n\n\n Test Files  1 passed (1)\n      Tests  18 passed (18)\n   Start at  03:15:57\n   Duration  462ms (transform 19ms, setup 0ms, import 27ms, tests 5ms, environment 348ms)"
+      }
+    ],
+    "dead_items": [],
+    "timestamp": "2026-08-09T03:13:30-04:00"
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Build"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "builder-T-002",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "a5fffce267d0f987e",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786259625330,
+      "queuedAt": 1786259623665,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-002",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-002.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786259906846,
+      "tokens": 60478,
+      "toolCalls": 20,
+      "durationMs": 281516,
+      "resultPreview": "{\"itemId\":\"T-002\",\"status\":\"done\",\"branch\":\"wave-300400-T-002\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-002.mgTeRb\",\"files_changed\":[\"src/data/realEstate.ts\",\"src/data/law.ts\"],\"summary\":\"Provisioned an isolated worktree/branch off the target repo (both derivation asserts passed: git-common-dir resolves into prompt-spark/.git, .swarm/SPEC.md present). Read the frozen con…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "builder-T-003",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "ab19b2399cde87d49",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786259625927,
+      "queuedAt": 1786259623665,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-003",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-003.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786259908260,
+      "tokens": 53791,
+      "toolCalls": 25,
+      "durationMs": 282333,
+      "resultPreview": "{\"itemId\":\"T-003\",\"status\":\"done\",\"branch\":\"wave-300400-T-003\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-003.Tvln6s\",\"files_changed\":[\"src/data/finance.ts\",\"src/data/science.ts\"],\"summary\":\"Built the Finance and Science SubjectPack files exactly conforming to the frozen contracts in src/core/types.ts and src/data/schema.ts (each exports `export const pack: SubjectPack`). …"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "builder-T-008",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "ae1d3a895eb21b408",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786259626217,
+      "queuedAt": 1786259623665,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-008",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-008.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786259771224,
+      "tokens": 43118,
+      "toolCalls": 20,
+      "durationMs": 145007,
+      "resultPreview": "{\"itemId\":\"T-008\",\"status\":\"done\",\"branch\":\"wave-300400-T-008\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-008.YnYgSt\",\"files_changed\":[\"src/core/share.ts\",\"src/core/share.test.ts\"],\"summary\":\"Provisioned an isolated worktree/branch derived from /Users/truman/Projects/prompt-spark (both derivation asserts passed: git-common-dir resolved into the target's .git, .swarm/SPEC.m…"
+    }
+  ],
+  "totalTokens": 157387,
+  "totalToolCalls": 65
+}

@@ -50,8 +50,8 @@
    "acceptance": "Each of the two packs exports >=10 schema-conformant templates, every template has fill-in variable slots, a twist pool, and difficulty metadata, with all three difficulty tiers represented in each pack.",
    "packages": [],
    "notes": "Conform strictly to src/data/schema.ts. Runs in parallel with T-003.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "model": "sonnet"
   },
   {
@@ -71,8 +71,8 @@
    "acceptance": "Each of the two packs exports >=10 schema-conformant templates, every template has fill-in variable slots, a twist pool, and difficulty metadata, with all three difficulty tiers represented in each pack.",
    "packages": [],
    "notes": "Conform strictly to src/data/schema.ts. Runs in parallel with T-002.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "model": "sonnet"
   },
   {
@@ -180,8 +180,8 @@
    "acceptance": "Encoding any seed+filters state to URL params and decoding it back yields an identical state (roundtrip equality), including empty-filter and all-filter cases.",
    "packages": [],
    "notes": "Pure module, no DOM; UI bootstrap wiring is deferred to T-013.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "model": "sonnet"
   },
   {
