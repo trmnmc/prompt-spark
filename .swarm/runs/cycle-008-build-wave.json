@@ -1,0 +1,153 @@
+{
+  "summary": "Parallel feature builders in isolated worktrees; returns claims for conductor verification",
+  "agentCount": 4,
+  "logs": [
+    "wave @ 2026-08-09T03:58:30-04:00 [T-011 \"BrainScoutView: seed phrase input, ladder rungs, remixes, copy/save\" (sonnet/M), T-013 \"Share-link URL bootstrap wiring\" (sonnet/S), T-018 \"Fix useFavorites snapshot stability (infinite loop on mount)\" (sonnet/S), T-020 \"generate(): normalize terminal punctuation before Twist sentence\" (sonnet/S)]"
+  ],
+  "result": {
+    "wave": [
+      {
+        "itemId": "T-011",
+        "status": "done",
+        "branch": "wave-300400-T-011",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-011.8ilSWP",
+        "files_changed": [
+          "src/ui/BrainScoutView.tsx"
+        ],
+        "summary": "Replaced the BrainScoutView stub with the full implementation. A form-wrapped input (placeholder 'Type a seed idea…') plus a 'Scout it 🔭' submit button (disabled while the trimmed phrase is empty; Enter key submits via native form submit) calls expand(phrase, seed) with seed = Math.floor(Math.random()*2**31) rolled at the UI boundary. Renders result.rungs as .ladder-rung cards in LADDER_RUNGS order (Weekend/Week/Month/Moonshot) and result.remixes as .remix-card cards, each with a .tag-chip label (rung name or lens) and the expanded text. A Re-scout button re-rolls the seed via expand(result.seedPhrase, newSeed), keeping the same phrase. Each card gets its own Copy (navigator.clipboard?.writeText guarded, flips to 'Copied!') and Save (addFavorite({kind:'scout', label, text, id: item.id}), flips to 'Saved ✓' whether newly added or already present) button, following PromptCard's pattern and using the plain favorites functions (addFavorite/favId/loadFavorites) rather than the known-buggy useFavorites hook. Only reused existing frozen classes (.scout-view, .scout-input-row, .scout-note, .ladder-rung, .remix-card, .tag-chip) with minor inline styles for the new card body/actions layout — app.css and no other file was touched. No test-file location was in my file scope (src/ui/BrainScoutView.tsx only), so no BrainScoutView-specific test was added; I verified via `npx tsc -b` (clean) and the full `npx vitest run` suite (110/110 passing, including App.test.tsx's Brain Scout tab/section assertions, which still pass unchanged).",
+        "self_test_output": " RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-011.8ilSWP\n\n Test Files  6 passed (6)\n      Tests  110 passed (110)\n   Start at  04:02:40\n   Duration  1.26s (transform 481ms, setup 0ms, import 761ms, tests 166ms, environment 5.24s)"
+      },
+      {
+        "itemId": "T-013",
+        "status": "done",
+        "branch": "wave-300400-T-013",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-013.BAlNai",
+        "files_changed": [
+          "src/ui/App.tsx",
+          "src/ui/App.test.tsx"
+        ],
+        "summary": "Implemented share-link URL bootstrap wiring entirely within App.tsx/App.test.tsx, per scope. In App.tsx, the seed and filters useState hooks now use lazy initializers that call decodeShare(window.location.search) once on mount; a valid decode sets the exact shared {seed, filters} so the memoized generate() call renders the string-identical prompt, while an invalid/absent query falls through to the pre-existing empty state (seed: null, filters: {}). Added a \"Copy share link\" button, rendered only in the generator view below PromptCard when a prompt exists, that builds `${location.origin}${location.pathname}?${encodeShare({seed, filters})}` and writes it via navigator.clipboard?.writeText (guarded with try/catch), flipping its label to \"Link copied!\" on click; it resets on a fresh Spark tap. Did not touch PromptCard.tsx or any component outside the two in-scope files. In App.test.tsx, added two tests: (a) using history.replaceState to stub location.search to '?seed=123&subject=law' before an isolated remount, then asserting the rendered .prompt-card's .prompt-text equals generate(123,{subject:'law'}).text; (b) clicking the new .share-link-button with a mocked clipboard and asserting writeText received a string containing 'seed=' and the label flipped to 'Link copied!'. All prior tests (rendered against the default empty-search app from the outer beforeEach) still pass unmodified, confirming the mount-bootstrap doesn't disturb the normal empty-state path. Ran the full suite (112 tests, 6 files) and `tsc -b` — both clean. Note: the worktree ships without node_modules (git worktrees don't carry gitignored dirs); I symlinked node_modules to the target repo's pre-installed copy to run tests — no packages were installed, vendored, or manifests touched, and the symlink itself is gitignored and was not committed. Two tracked build-cache files (.tsbuild/tsconfig*.tsbuildinfo) picked up incidental timestamp diffs from running tsc/vitest; left unstaged/uncommitted since they're outside file scope.",
+        "self_test_output": " RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-013.BAlNai\n\n Test Files  6 passed (6)\n      Tests  112 passed (112)\n   Start at  04:01:06\n   Duration  1.16s (transform 549ms, setup 0ms, import 831ms, tests 187ms, environment 4.50s)\n\n$ npx tsc -b\n(no output — clean)"
+      },
+      {
+        "itemId": "T-018",
+        "status": "done",
+        "branch": "wave-300400-T-018",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-018.pUklyM",
+        "files_changed": [
+          "src/state/favorites.ts",
+          "src/state/favorites.test.ts"
+        ],
+        "summary": "Fixed KI-1: useFavorites() was calling useSyncExternalStore(subscribe, loadFavorites, loadFavorites) directly, but loadFavorites() returns a fresh array reference every call — violating getSnapshot's \"same reference until data changes\" contract and causing React to throw \"Maximum update depth exceeded\" on mount. In src/state/favorites.ts, added an internal module-level `cachedSnapshot: Favorite[] | null`, a private `getSnapshot()` that lazily populates it on first read and reuses the cached reference thereafter, and invalidation (`cachedSnapshot = null`) inside `notify()` so any real write (add/remove) recomputes it on the next read. `useFavorites()` now wires `useSyncExternalStore(subscribe, getSnapshot, getSnapshot)` instead of loadFavorites. Public API is unchanged: loadFavorites still returns a fresh array on every call (existing consumers/tests unaffected), addFavorite/removeFavorite/favId/subscribe/useFavorites signatures untouched. Did not touch src/ui/FavoritesView.tsx per instructions. All 15 pre-existing tests in favorites.test.ts pass byte-for-byte unchanged. Appended two new tests: (1) mounts a real React component via react-dom/client createRoot + act, asserting mount succeeds, textContent reflects the store, and the component re-renders exactly once per store change (addFavorite twice inside act, checking both textContent and a render counter) — I verified this test genuinely fails with the reported \"Maximum update depth exceeded\" error when I temporarily reverted useFavorites to the broken loadFavorites-as-getSnapshot wiring, then restored the fix; (2) getSnapshot referential stability — renders a capture component twice via a prop change with no store write between them and asserts Object.is equality of the captured array, then writes and asserts a new, distinct, correctly-updated reference is produced. Also added a `globalThis.IS_REACT_ACT_ENVIRONMENT = true` line in the test file (in scope) to silence a spurious React act() environment warning; this doesn't touch app code. Full `npx tsc --noEmit` is clean. Note: the worktree ships without node_modules (git worktree doesn't include it), so I symlinked node_modules from the target repo into the worktree purely to run tests locally — this is untracked/gitignored and was never staged or committed.",
+        "self_test_output": "RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-018.pUklyM\n\n Test Files  6 passed (6)\n      Tests  112 passed (112)\n   Start at  04:03:17\n   Duration  1.21s (transform 512ms, setup 0ms, import 825ms, tests 174ms, environment 4.45s)\n\n(favorites.test.ts specifically: 17 passed, including the 2 new useFavorites tests; verified they fail with \"Maximum update depth exceeded\" against the pre-fix code before restoring the fix)"
+      },
+      {
+        "itemId": "T-020",
+        "status": "done",
+        "branch": "wave-300400-T-020",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-020.sltXpy",
+        "files_changed": [
+          "src/core/generate.ts",
+          "src/core/generate.test.ts"
+        ],
+        "summary": "Fixed the run-on-sentence bug at generate()'s single assembly point in src/core/generate.ts. Added a pure helper withTerminalPunctuation(text) that trims trailing whitespace and appends '.' only if the text doesn't already end in . ! or ?. Applied it to both the resolved template body and the twist before joining them as `${body} Twist: ${twistText}`. No template data files were touched, and no additional rand() call is consumed, so the existing determinism/string-equality tests (which rely on identical two-call output) still pass unchanged. Extended src/core/generate.test.ts with a T-020 describe block: one test iterates getTemplates({}) grouped into its 12 subject x difficulty buckets, sweeps 200 seeds per bucket to positively confirm every one of the 48 templates is exercised (not just probabilistically likely to be), and asserts every produced text matches /[.!?] Twist: / and ends in [.!?]; a second test sweeps 200 unfiltered seeds for the same shape. Verified TDD red state first (2 new tests failed pre-fix showing exactly the run-on bug, e.g. '...hardcode Twist: Add a simple...'), then green after the fix, with all 21 pre-existing tests in the file passing throughout. Provisioned the worktree per Step 0, verified git-common-dir and .swarm/SPEC.md, and symlinked node_modules from the target repo into the worktree (untracked, covered by .gitignore's node_modules/ pattern) purely to run vitest/tsc locally — nothing outside the file scope was modified or committed.",
+        "self_test_output": " RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-020.sltXpy\n\n\n Test Files  6 passed (6)\n      Tests  112 passed (112)\n   Start at  04:01:30\n   Duration  697ms (transform 329ms, setup 0ms, import 481ms, tests 153ms, environment 2.53s)\n\n(also ran: npx tsc --noEmit -p tsconfig.json -> no output, clean type-check)"
+      }
+    ],
+    "dead_items": [],
+    "timestamp": "2026-08-09T03:58:30-04:00"
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Build"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "builder-T-011",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "a8cfba2d26d2c8797",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786262338434,
+      "queuedAt": 1786262336209,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-011",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-011.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786262572312,
+      "tokens": 62394,
+      "toolCalls": 26,
+      "durationMs": 233878,
+      "resultPreview": "{\"itemId\":\"T-011\",\"status\":\"done\",\"branch\":\"wave-300400-T-011\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-011.8ilSWP\",\"files_changed\":[\"src/ui/BrainScoutView.tsx\"],\"summary\":\"Replaced the BrainScoutView stub with the full implementation. A form-wrapped input (placeholder 'Type a seed idea…') plus a 'Scout it 🔭' submit button (disabled while the trimmed phrase is empty; En…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "builder-T-013",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "a050f196eaa978cbd",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786262339281,
+      "queuedAt": 1786262336209,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-013",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-013.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786262520406,
+      "tokens": 54540,
+      "toolCalls": 25,
+      "durationMs": 181125,
+      "resultPreview": "{\"itemId\":\"T-013\",\"status\":\"done\",\"branch\":\"wave-300400-T-013\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-013.BAlNai\",\"files_changed\":[\"src/ui/App.tsx\",\"src/ui/App.test.tsx\"],\"summary\":\"Implemented share-link URL bootstrap wiring entirely within App.tsx/App.test.tsx, per scope. In App.tsx, the seed and filters useState hooks now use lazy initializers that call decodeShare(…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "builder-T-018",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "a771a561cf07f9551",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786262338481,
+      "queuedAt": 1786262336209,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-018",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-018.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786262612942,
+      "tokens": 57893,
+      "toolCalls": 33,
+      "durationMs": 274461,
+      "resultPreview": "{\"itemId\":\"T-018\",\"status\":\"done\",\"branch\":\"wave-300400-T-018\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-018.pUklyM\",\"files_changed\":[\"src/state/favorites.ts\",\"src/state/favorites.test.ts\"],\"summary\":\"Fixed KI-1: useFavorites() was calling useSyncExternalStore(subscribe, loadFavorites, loadFavorites) directly, but loadFavorites() returns a fresh array reference every call…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "builder-T-020",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "a014e68196ffc55b1",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786262338089,
+      "queuedAt": 1786262336209,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-020",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-020.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786262527841,
+      "tokens": 50902,
+      "toolCalls": 24,
+      "durationMs": 189752,
+      "resultPreview": "{\"itemId\":\"T-020\",\"status\":\"done\",\"branch\":\"wave-300400-T-020\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-020.sltXpy\",\"files_changed\":[\"src/core/generate.ts\",\"src/core/generate.test.ts\"],\"summary\":\"Fixed the run-on-sentence bug at generate()'s single assembly point in src/core/generate.ts. Added a pure helper withTerminalPunctuation(text) that trims trailing whitespace and…"
+    }
+  ],
+  "totalTokens": 225729,
+  "totalToolCalls": 108
+}

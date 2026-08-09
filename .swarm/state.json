@@ -2,8 +2,8 @@
  "idea": "fun project-prompt creator with subject packs (real estate, law, finance, science) + Brain Scout idea expander",
  "project_dir": "/Users/truman/Projects/prompt-spark",
  "created_at": "2026-08-09T02:37:00-04:00",
- "phase": "BUILD",
- "cycle": 7,
+ "phase": "REVIEW",
+ "cycle": 8,
  "run_cmd": "npm run dev -- --port 5199 --strictPort",
  "test_cmd": "npx vitest run",
  "preview": {
@@ -32,8 +32,8 @@
  "known_issues": [
   {
    "id": "KI-1",
-   "desc": "useFavorites() hook violates useSyncExternalStore snapshot stability -> 'Maximum update depth exceeded' on mount (conductor-reproduced c7); unused after T-012 workaround but exported landmine",
-   "severity": "med",
+   "desc": "useFavorites() hook violates useSyncExternalStore snapshot stability -> 'Maximum update depth exceeded' on mount (conductor-reproduced c7); unused after T-012 workaround but exported landmine \u2014 RESOLVED cycle 8 (T-018 verified: strict mount passes)",
+   "severity": "resolved",
    "cycle_found": 7
   }
  ],
@@ -41,13 +41,13 @@
   "consecutive_no_value": 0,
   "consecutive_failures": 0,
   "k_current": 5,
-  "wave_streak": 1,
+  "wave_streak": 0,
   "window_tokens_attributed": 0
  },
  "last_cycle": {
-  "n": 7,
-  "work": "build-wave T-006 T-010 T-012(+T-017) + look",
-  "outcome": "4 verified, KI-1 confirmed, 4 look findings -> T-019/20/21",
+  "n": 8,
+  "work": "build-wave T-011 T-013 T-018 T-020",
+  "outcome": "4 verified; ALL 5 must-haves done; KI-1 resolved",
   "commit": ""
  },
  "qa": {

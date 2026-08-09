@@ -24,13 +24,13 @@ build tonight or an idea expanded into something bigger. Used on desktop and pho
       (≥10 base prompts per subject, each with fill-in variables that get randomized)
       <!-- verified cycle 4: 12 templates/pack, validatePack=[], all difficulties -->
 
-- [ ] Randomizer / "Surprise me" button: one tap generates a complete project prompt
+- [x] Randomizer / "Surprise me" button: one tap generates a complete project prompt
       (subject × template × variables × twist), seedable for deterministic testing
-- [ ] Difficulty + time-estimate tags on every prompt (easy/medium/hard mapped to
+- [x] Difficulty + time-estimate tags on every prompt (easy/medium/hard mapped to
       time bands), with filtering by subject and difficulty
-- [ ] Copy-to-clipboard on every generated prompt + favorites list persisted in
+- [x] Copy-to-clipboard on every generated prompt + favorites list persisted in
       localStorage (add, view, remove)
-- [ ] Brain Scout: input a seed idea → client-side expansion into a scope ladder
+- [x] Brain Scout: input a seed idea → client-side expansion into a scope ladder
       (weekend build → week project → month project → moonshot) plus 3+ angle
       remixes drawn from the subject packs' lenses; results copyable/saveable
 

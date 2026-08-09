@@ -250,8 +250,8 @@
    "acceptance": "Entering a seed phrase renders 4 ladder-rung cards in Weekend/Week/Month/Moonshot order and 3 remix-cards, each with working copy and save controls that persist through the shared favorites store.",
    "packages": [],
    "notes": "Uses frozen classes ladder-rung and remix-card; scout ids come from brainScout core, not recomputed in UI.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "model": "sonnet"
   },
   {
@@ -292,8 +292,8 @@
    "acceptance": "Opening a URL containing share params renders the string-identical prompt (same seed+filters) that was showing when the share link was created, and each generated prompt exposes a copyable share link.",
    "packages": [],
    "notes": "Delighter; only starts after must-haves T-001..T-012 are verified. Sole owner of App.tsx in this wave.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "model": "sonnet"
   },
   {
@@ -400,8 +400,8 @@
    "acceptance": "A component using useFavorites() mounts without error and re-renders exactly once per store change.",
    "packages": [],
    "model": "sonnet",
-   "attempts": 0,
-   "status": "todo",
+   "attempts": 1,
+   "status": "done",
    "notes": "KI-1: loadFavorites returns fresh array each call; cache snapshot, invalidate on notify. Conductor-reproduced 'Maximum update depth exceeded'."
   },
   {
@@ -437,8 +437,8 @@
    "acceptance": "Every generated prompt reads as two sentences: body ends with terminal punctuation before 'Twist:' begins (no run-ons), for all 48 templates.",
    "packages": [],
    "model": "sonnet",
-   "attempts": 0,
-   "status": "todo",
+   "attempts": 1,
+   "status": "done",
    "notes": "c7 look finding 2 (med): 24/48 templates lack end punctuation; fix at generate() single point (append '.' when body lacks .!?), add test over all templates"
   },
   {
