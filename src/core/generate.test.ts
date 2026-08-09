@@ -154,6 +154,11 @@ describe('generated prompt shape', () => {
 
 describe('T-020: terminal punctuation before the Twist sentence', () => {
   const TWO_SENTENCE_RE = /[.!?] Twist: /
+  // A terminal mark may sit inside a trailing closing quote/paren (e.g.
+  // `no survivors."`) — checking only the bare last character would also
+  // pass on a malformed double terminal like `."` followed by another
+  // '.', so this also rejects that shape explicitly below.
+  const TERMINAL_RE = /[.!?]["')]?$/
 
   it('covers all 48 templates and every generated text is two well-formed sentences', () => {
     const allTemplates = getTemplates({})
@@ -181,7 +186,8 @@ describe('T-020: terminal punctuation before the Twist sentence', () => {
         // punctuation ends the body right before "Twist: " begins, and
         // the twist sentence itself ends terminally too.
         expect(prompt.text).toMatch(TWO_SENTENCE_RE)
-        expect(prompt.text).toMatch(/[.!?]$/)
+        expect(prompt.text).toMatch(TERMINAL_RE)
+        expect(prompt.text).not.toMatch(/[.!?]["')]?[.!?]$/)
       }
       expect(seenIds).toEqual(expectedIds)
     }
@@ -191,7 +197,8 @@ describe('T-020: terminal punctuation before the Twist sentence', () => {
     for (let seed = 0; seed < 200; seed++) {
       const prompt = generate(seed, {})
       expect(prompt.text).toMatch(TWO_SENTENCE_RE)
-      expect(prompt.text).toMatch(/[.!?]$/)
+      expect(prompt.text).toMatch(TERMINAL_RE)
+      expect(prompt.text).not.toMatch(/[.!?]["')]?[.!?]$/)
     }
   })
 })

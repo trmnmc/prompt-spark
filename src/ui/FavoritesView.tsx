@@ -1,7 +1,14 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 
-import type { Favorite } from '../core/types'
+import type { Difficulty, Favorite } from '../core/types'
 import { favId, loadFavorites, removeFavorite, subscribe } from '../state/favorites'
+
+/** Display labels — mirrors PromptCard's difficulty chip labels. */
+const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+  easy: 'Easy',
+  medium: 'Medium',
+  hard: 'Hard',
+}
 
 /** Inline line-clamp so long prompt/scout text truncates visually without editing app.css. */
 const clampStyle: CSSProperties = {
@@ -103,7 +110,8 @@ export default function FavoritesView() {
                     }}
                   >
                     <span className="tag-chip">{f.prompt.subject}</span>
-                    <span className="tag-chip">{f.prompt.difficulty}</span>
+                    <span className="tag-chip">{DIFFICULTY_LABELS[f.prompt.difficulty]}</span>
+                    <span className="tag-chip">{f.prompt.timeBand}</span>
                     <span className="serial-tag">{f.prompt.serial}</span>
                   </div>
                 </>
