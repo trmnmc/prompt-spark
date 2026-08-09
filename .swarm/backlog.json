@@ -115,8 +115,8 @@
    "acceptance": "generate(seed, filters) is pure and string-identical for identical seed+filters, always includes a twist, honors conjunctive subject AND difficulty filtering for every subject x difficulty combo (empty filters = all), and emits the fixed difficulty-to-time labels.",
    "packages": [],
    "notes": "Implements the exact signatures frozen in src/core/types.ts; exposes djb2 hash used for prompt ids hash(seed+templateId).",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "route_class": "core",
    "model": "fable"
   },
@@ -159,8 +159,8 @@
    "acceptance": "Favorites persist under key prompt-spark:favorites:v1 across reload; adding an already-saved id is a no-op (deduped by id) and remove deletes exactly one entry.",
    "packages": [],
    "notes": "Single shared save path used later by both prompt cards and Brain Scout items; framework-agnostic module with a React subscription hook.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "model": "sonnet"
   },
   {
@@ -206,8 +206,8 @@
    "acceptance": "The app renders with working subject AND difficulty filter chips (conjunctive, empty = all) and navigable Generator/Brain Scout/Favorites sections at 375px width with the hero button as the visually largest element.",
    "packages": [],
    "notes": "Creates SurpriseHero/PromptCard/BrainScoutView/FavoritesView as minimal typed stubs so the app compiles; later items own those files exclusively and this item's files are not touched again in parallel waves.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "model": "sonnet"
   },
   {
@@ -366,6 +366,24 @@
    "status": "todo",
    "attempts": 0,
    "model": "sonnet"
+  },
+  {
+   "id": "T-017",
+   "title": "Scope FilterBar to Generator view only",
+   "kind": "fix",
+   "priority": 3,
+   "value": "M",
+   "effort": "S",
+   "deps": [],
+   "files_hint": [
+    "src/ui/App.tsx"
+   ],
+   "acceptance": "Filter chips appear only on the Generator tab; Brain Scout and Favorites tabs show no FilterBar.",
+   "packages": [],
+   "model": "sonnet",
+   "attempts": 0,
+   "status": "todo",
+   "notes": "cycle-6 look finding (low): App.tsx renders FilterBar outside the view conditional; filters are functionless on Scout/Favorites tabs"
   }
  ]
 }

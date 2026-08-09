@@ -1,0 +1,76 @@
+{
+  "summary": "QA against the live product: spec-only scenario author, executor, and a live-look agent; cheap look-only mode for post-merge checks",
+  "agentCount": 1,
+  "logs": [
+    "qa-verify @ 2026-08-09T03:38:00-04:00 | mode look | cycle-006-look | models a/e/l: fable/sonnet/fable",
+    "qa-verify done: 0 scenario(s), 0 fail(s), 1 look finding(s)"
+  ],
+  "result": {
+    "runId": "qa-verify@2026-08-09T03:38:00-04:00",
+    "mode": "look",
+    "scenarios": [],
+    "results": [],
+    "look": {
+      "findings": [
+        {
+          "severity": "low",
+          "where": "Brain Scout and Favorites tabs (mobile 375px and desktop)",
+          "expected": "Per spec digest, Brain Scout tab shows input + disabled 'Scout it' button + 'expansion lands soon' note, and Favorites tab shows 'No favorites yet' — filter chips are described only as part of the Generator surface",
+          "found": "The full FilterBar (All/Real Estate/Law/Finance/Science + Any/Easy/Medium/Hard chips) renders at the top of ALL three tabs, above the 'Brain Scout' and 'Favorites' headings, because App.tsx line 51 renders <FilterBar> outside the view conditional ({view === 'generator' && <SurpriseHero/>} is conditional but FilterBar is not). The chips are interactive on those tabs but have no function there since generation lives on the Generator tab.",
+          "evidence": "Screenshots /Users/truman/Projects/prompt-spark/.swarm/runs/cycle-006-look-qa-mobile-scout.png and cycle-006-look-qa-mobile-favorites.png show Law/Hard chips active above the Brain Scout input and the Favorites empty state; rendered app-main textContent on Favorites tab captured as 'AllReal EstateLawFinanceScienceAnyEasyMediumHardFavoritesNo favorites yet'. May be intentional shared-filter state, but it contradicts the spec's tab-content descriptions, so flagging for the conductor to adjudicate."
+        }
+      ],
+      "screenshots": [
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-006-look-qa-mobile-generator.png",
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-006-look-qa-mobile-seed-card.png",
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-006-look-qa-mobile-scout.png",
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-006-look-qa-mobile-favorites.png",
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-006-look-qa-desktop-generator.png"
+      ],
+      "server_log_tail": "> prompt-spark@0.1.0 dev\n> vite --port 5199 --strictPort\n\n  VITE v8.2.1  ready in 102 ms\n  ➜  Local:   http://localhost:5199/\n  ➜  Network: use --host to expose\n\n[verified checks: styled render at 375px and 1280px (screenshots); scrollWidth==innerWidth at both widths (no horizontal scroll); hero is largest element at 375px (83553px² vs tab-bar 27375px²) with height 244px == 30vh exactly; hero tap produced 'Seed no. 1155124983 ready — generator wiring lands soon' in a styled .prompt-card and a second tap produced a new seed (534637605); subject/difficulty chips toggle active state correctly incl. tap-active-chip-clears-to-All (Law→off restored All) with aria-pressed tracking; tab nav switches views with aria-pressed; Brain Scout input present with 'Scout it' disabled=true; Favorites shows 'No favorites yet'; page console clean at both widths (only vite connect debug + React DevTools info, zero errors). Dev server killed after run; port 5199 confirmed free.]"
+    },
+    "agents_used": 1,
+    "dead_agents": [],
+    "timestamp": "2026-08-09T03:38:00-04:00"
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Author"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Execute"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 3,
+      "title": "Look"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "live-look",
+      "phaseIndex": 3,
+      "phaseTitle": "Look",
+      "agentId": "ac75b387c73b20c40",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786260937012,
+      "queuedAt": 1786260932530,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "> prompt-spark@0.1.0 dev > vite --port 5199 --strictPort VI…",
+      "promptPreview": "You are the live-look agent in an overnight autonomous swarm — the one\nagent whose ONLY job is to LOOK at the running product the way a human\nuser would. Test suites can be green while the rendered app is garbage\n(two modules shadowing one global put \"new moon - 82% illuminated\" where\na score belonged, with 28/28 tests passing and no console error). You are\nthe defense against that class of bug.\n\n…",
+      "lastProgressAt": 1786261135618,
+      "tokens": 48680,
+      "toolCalls": 30,
+      "durationMs": 198606,
+      "resultPreview": "{\"findings\":[{\"severity\":\"low\",\"where\":\"Brain Scout and Favorites tabs (mobile 375px and desktop)\",\"expected\":\"Per spec digest, Brain Scout tab shows input + disabled 'Scout it' button + 'expansion lands soon' note, and Favorites tab shows 'No favorites yet' — filter chips are described only as part of the Generator surface\",\"found\":\"The full FilterBar (All/Real Estate/Law/Finance/Science + Any/Ea…"
+    }
+  ],
+  "totalTokens": 48680,
+  "totalToolCalls": 30
+}

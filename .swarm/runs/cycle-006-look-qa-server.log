@@ -1,0 +1,9 @@
+
+> prompt-spark@0.1.0 dev
+> vite --port 5199 --strictPort
+
+
+  VITE v8.2.1  ready in 102 ms
+
+  ➜  Local:   http://localhost:5199/
+  ➜  Network: use --host to expose
