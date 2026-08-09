@@ -3,6 +3,7 @@ import type { Difficulty, Subject } from './types'
 import { DIFFICULTY_TO_TIME } from './types'
 import { djb2, mulberry32, promptId, serialFromId } from './rng'
 import { generate } from './generate'
+import { getTemplates } from '../data/index'
 
 const SUBJECTS: Subject[] = ['realEstate', 'law', 'finance', 'science']
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard']
@@ -147,6 +148,50 @@ describe('generated prompt shape', () => {
       expect(prompt.serial).toHaveLength(4)
       expect(prompt.serial).toBe(serialFromId(prompt.id))
       expect(prompt.id).toBe(promptId(prompt.seed, prompt.templateId))
+    }
+  })
+})
+
+describe('T-020: terminal punctuation before the Twist sentence', () => {
+  const TWO_SENTENCE_RE = /[.!?] Twist: /
+
+  it('covers all 48 templates and every generated text is two well-formed sentences', () => {
+    const allTemplates = getTemplates({})
+    expect(allTemplates.length).toBe(48)
+
+    // getTemplates({}) partitions into subject x difficulty buckets; draw
+    // a fixed run of seeds per bucket (deterministic, no rand() beyond
+    // what generate() itself consumes) and confirm every template id in
+    // the bucket is actually exercised, so the assertion below is proven
+    // true for all 48 templates, not just whichever the RNG favors.
+    const buckets = new Map<string, Set<string>>()
+    for (const template of allTemplates) {
+      const key = `${template.subject}:${template.difficulty}`
+      if (!buckets.has(key)) buckets.set(key, new Set())
+      buckets.get(key)!.add(template.id)
+    }
+
+    for (const [key, expectedIds] of buckets) {
+      const [subject, difficulty] = key.split(':') as [Subject, Difficulty]
+      const seenIds = new Set<string>()
+      for (let seed = 0; seed < 200; seed++) {
+        const prompt = generate(seed, { subject, difficulty })
+        seenIds.add(prompt.templateId)
+        // Every generated prompt reads as two sentences: terminal
+        // punctuation ends the body right before "Twist: " begins, and
+        // the twist sentence itself ends terminally too.
+        expect(prompt.text).toMatch(TWO_SENTENCE_RE)
+        expect(prompt.text).toMatch(/[.!?]$/)
+      }
+      expect(seenIds).toEqual(expectedIds)
+    }
+  })
+
+  it('holds for the unfiltered pool across a broad range of seeds', () => {
+    for (let seed = 0; seed < 200; seed++) {
+      const prompt = generate(seed, {})
+      expect(prompt.text).toMatch(TWO_SENTENCE_RE)
+      expect(prompt.text).toMatch(/[.!?]$/)
     }
   })
 })

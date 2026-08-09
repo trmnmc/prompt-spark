@@ -14,6 +14,17 @@ import { mulberry32, promptId, serialFromId } from './rng'
 /** Matches a single `{slot}` placeholder; group 1 is the slot name. */
 const SLOT_RE = /\{([^{}]+)\}/g
 
+/**
+ * Trims trailing whitespace and ensures the text ends in a terminal mark
+ * (. ! or ?), appending '.' if none is present. Pure, no rand() consumed.
+ * Used at generate()'s single assembly point so every prompt reads as two
+ * complete sentences (T-020) without ever editing template data.
+ */
+function withTerminalPunctuation(text: string): string {
+  const trimmed = text.replace(/\s+$/, '')
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`
+}
+
 export function generate(seed: number, filters: Filters): GeneratedPrompt {
   const pool = getTemplates(filters)
   if (pool.length === 0) {
@@ -45,7 +56,15 @@ export function generate(seed: number, filters: Filters): GeneratedPrompt {
 
   // Exactly one twist, always, appended as a new sentence.
   const twist = template.twists[Math.floor(rand() * template.twists.length)]
-  const text = `${resolved} Twist: ${twist}`
+
+  // TERMINAL PUNCTUATION RULE (T-020): every generated prompt must read as
+  // two well-formed sentences. Some template bodies/twists in the data
+  // omit trailing punctuation, which otherwise produces a run-on like
+  // "...plain language Twist: Let users...". Normalize both halves here,
+  // at the single assembly point, without touching template data.
+  const body = withTerminalPunctuation(resolved)
+  const twistText = withTerminalPunctuation(twist)
+  const text = `${body} Twist: ${twistText}`
 
   const id = promptId(seed, template.id)
 
