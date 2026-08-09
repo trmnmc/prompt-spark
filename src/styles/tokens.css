@@ -1,0 +1,188 @@
+/*
+ * FROZEN Layer 1 design tokens for Prompt Spark — do not edit after T-001.
+ * Committed accent scheme: warm coral + amber on cream, ink text.
+ * Frozen class vocabulary: .prompt-card .ladder-rung .remix-card .fav-item
+ * .surprise-hero .filter-chip .filter-chip--active .tag-chip .serial-tag
+ */
+
+:root {
+  /* palette — warm coral/amber on cream */
+  --color-bg: #fdf6ec;
+  --color-surface: #fffdf8;
+  --color-surface-raised: #ffffff;
+  --color-ink: #241f1c;
+  --color-ink-soft: #6b5f56;
+  --color-accent: #ff5d47;
+  --color-accent-soft: #ffe3dd;
+  --color-accent-2: #f5a623;
+  --color-accent-2-soft: #fdeed3;
+  --color-line: #eadfd2;
+  --color-card-shadow: 0 2px 6px rgba(36, 31, 28, 0.08), 0 8px 24px rgba(36, 31, 28, 0.06);
+
+  /* spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* radii */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* type scale */
+  --font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.625rem;
+  --text-2xl: 2.125rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1c1815;
+    --color-surface: #262019;
+    --color-surface-raised: #2e2720;
+    --color-ink: #f6ede2;
+    --color-ink-soft: #b3a396;
+    --color-accent: #ff7a63;
+    --color-accent-soft: #47251f;
+    --color-accent-2: #ffb84d;
+    --color-accent-2-soft: #3d2f1a;
+    --color-line: #3c332b;
+    --color-card-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* ---- frozen class vocabulary ---- */
+
+.prompt-card {
+  position: relative;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--color-card-shadow);
+  max-width: 40rem;
+}
+
+.prompt-card h1,
+.prompt-card h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-xl);
+  letter-spacing: -0.01em;
+}
+
+.ladder-rung {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-left: 4px solid var(--color-accent-2);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-block: var(--space-2);
+}
+
+.remix-card {
+  background: var(--color-accent-2-soft);
+  border: 1px dashed var(--color-accent-2);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-block: var(--space-2);
+}
+
+.fav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-block: var(--space-2);
+}
+
+.surprise-hero {
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-2) 100%);
+  color: #fffdf8;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--color-card-shadow);
+  transition: transform 120ms ease;
+}
+
+.surprise-hero:active {
+  transform: scale(0.97);
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.filter-chip--active {
+  background: var(--color-accent);
+  color: #fffdf8;
+  border-color: var(--color-accent);
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+.serial-tag {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-ink-soft);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1);
+  letter-spacing: 0.08em;
+}
