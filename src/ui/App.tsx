@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
+import { generate } from '../core/generate'
 import type { Filters } from '../core/types'
 import '../styles/app.css'
 import FilterBar from './FilterBar'
+import PromptCard from './PromptCard'
 import SurpriseHero from './SurpriseHero'
 import BrainScoutView from './BrainScoutView'
 import FavoritesView from './FavoritesView'
@@ -19,6 +21,10 @@ export default function App() {
   const [seed, setSeed] = useState<number | null>(null)
   const [filters, setFilters] = useState<Filters>({})
   const [view, setView] = useState<View>('generator')
+
+  // Pure downstream of seed + filters — generate() itself never touches
+  // Math.random; randomness lives only at the UI boundary below.
+  const prompt = useMemo(() => (seed == null ? undefined : generate(seed, filters)), [seed, filters])
 
   function handleSpark() {
     // Randomness lives here, at the UI boundary — everything downstream
@@ -47,8 +53,13 @@ export default function App() {
       </nav>
 
       <main className="app-main">
-        {view === 'generator' && <SurpriseHero seed={seed} onSpark={handleSpark} />}
-        <FilterBar filters={filters} onChange={setFilters} />
+        {view === 'generator' && (
+          <>
+            <SurpriseHero onSpark={handleSpark} />
+            <FilterBar filters={filters} onChange={setFilters} />
+            <PromptCard prompt={prompt} />
+          </>
+        )}
         {view === 'scout' && <BrainScoutView />}
         {view === 'favorites' && <FavoritesView />}
       </main>

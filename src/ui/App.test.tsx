@@ -1,6 +1,6 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
 
@@ -8,6 +8,7 @@ let container: HTMLDivElement
 let root: Root
 
 beforeEach(() => {
+  localStorage.clear()
   container = document.createElement('div')
   document.body.appendChild(container)
   act(() => {
@@ -21,6 +22,7 @@ afterEach(() => {
     root.unmount()
   })
   container.remove()
+  localStorage.clear()
 })
 
 function click(el: Element | null) {
@@ -47,7 +49,7 @@ describe('App shell', () => {
     expect(container.querySelector('.surprise-hero')).not.toBeNull()
   })
 
-  it('navigates to Brain Scout and Favorites sections', () => {
+  it('navigates to Brain Scout and Favorites sections, with no filter chips shown there', () => {
     const tabs = () => Array.from(container.querySelectorAll('.tab-button'))
     const scoutTab = tabs().find((t) => textOf(t) === 'Brain Scout')!
     click(scoutTab)
@@ -55,6 +57,7 @@ describe('App shell', () => {
     expect(scoutTab.getAttribute('aria-pressed')).toBe('true')
     expect(container.querySelector('.scout-view')).not.toBeNull()
     expect(container.querySelector('.surprise-hero')).toBeNull()
+    expect(container.querySelectorAll('.filter-chip').length).toBe(0)
 
     const favTab = tabs().find((t) => textOf(t) === 'Favorites')!
     click(favTab)
@@ -62,15 +65,76 @@ describe('App shell', () => {
     expect(favTab.getAttribute('aria-pressed')).toBe('true')
     expect(container.querySelector('.favorites-view')).not.toBeNull()
     expect(textOf(container.querySelector('.empty-state'))).toBe('No favorites yet')
+    expect(container.querySelectorAll('.filter-chip').length).toBe(0)
   })
 
-  it('tapping the hero shows a seed placeholder card', () => {
+  it('filter chips are present on the Generator tab', () => {
+    expect(container.querySelectorAll('.filter-chip').length).toBeGreaterThan(0)
+  })
+
+  it('tapping the hero renders a real generated prompt card', () => {
     expect(container.querySelector('.prompt-card')).toBeNull()
     click(container.querySelector('.surprise-hero'))
 
-    const card = container.querySelector('.hero-area .prompt-card')
+    const card = container.querySelector('.prompt-card')
     expect(card).not.toBeNull()
-    expect(textOf(card)).toMatch(/^Seed no\. \d+ ready — generator wiring lands soon$/)
+    expect(textOf(card)).toContain('Twist:')
+
+    const serial = card!.querySelector('.serial-tag')
+    expect(textOf(serial)).toMatch(/^No [0-9A-F]{4}$/)
+  })
+
+  it('regenerating with a subject filter active yields a card whose subject chip matches', () => {
+    // baseline generation, unfiltered
+    click(container.querySelector('.surprise-hero'))
+    expect(container.querySelector('.prompt-card')).not.toBeNull()
+
+    const subjectRow = container.querySelector('[aria-label="Subject"]')!
+    const lawChip = Array.from(subjectRow.querySelectorAll('.filter-chip')).find(
+      (c) => textOf(c) === 'Law',
+    )!
+    click(lawChip)
+
+    // regenerate with the filter now active
+    click(container.querySelector('.surprise-hero'))
+
+    const card = container.querySelector('.prompt-card')!
+    const chips = Array.from(card.querySelectorAll('.tag-chip')).map((c) => textOf(c))
+    expect(chips[0]).toBe('Law')
+  })
+
+  it('Copy puts the prompt text on the clipboard and flips to Copied!', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+
+    click(container.querySelector('.surprise-hero'))
+    const card = container.querySelector('.prompt-card')!
+    const promptText = textOf(card.querySelector('.prompt-text'))
+    const copyButton = card.querySelector('.copy-button') as HTMLButtonElement
+
+    await act(async () => {
+      copyButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(writeText).toHaveBeenCalledWith(promptText)
+    expect(textOf(copyButton)).toBe('Copied!')
+  })
+
+  it('Save adds the prompt to favorites by id and flips to Saved', () => {
+    click(container.querySelector('.surprise-hero'))
+    const card = container.querySelector('.prompt-card')!
+    const saveButton = card.querySelector('.save-button') as HTMLButtonElement
+
+    expect(textOf(saveButton)).toBe('Save')
+    click(saveButton)
+    expect(textOf(saveButton)).toBe('Saved ✓')
+
+    const stored = JSON.parse(localStorage.getItem('prompt-spark:favorites:v1') ?? '[]')
+    expect(stored).toHaveLength(1)
+    expect(stored[0].kind).toBe('prompt')
   })
 
   it('filter chips apply conjunctive subject + difficulty filters, empty = all', () => {
