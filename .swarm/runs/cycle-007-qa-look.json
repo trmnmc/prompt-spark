@@ -1,0 +1,98 @@
+{
+  "summary": "QA against the live product: spec-only scenario author, executor, and a live-look agent; cheap look-only mode for post-merge checks",
+  "agentCount": 1,
+  "logs": [
+    "qa-verify @ 2026-08-09T03:55:00-04:00 | mode look | cycle-007-look | models a/e/l: fable/sonnet/fable",
+    "qa-verify done: 0 scenario(s), 0 fail(s), 4 look finding(s)"
+  ],
+  "result": {
+    "runId": "qa-verify@2026-08-09T03:55:00-04:00",
+    "mode": "look",
+    "scenarios": [],
+    "results": [],
+    "look": {
+      "findings": [
+        {
+          "severity": "medium",
+          "where": "Favorites tab — saved prompt entries (src/ui/FavoritesView.tsx lines 105-106)",
+          "expected": "Subject/difficulty chips on saved entries use display labels like the generator card: 'Real Estate', 'Law', 'Easy'",
+          "found": "Raw internal enum values are rendered ('realEstate', 'law', 'easy'); the chip's uppercase styling turns the camelCase identifier into the smashed word 'REALESTATE' visible to the user",
+          "evidence": "Rendered favorites text captured via browse: '...calendarlaweasy9812CopyRemove...realEstateeasyEDC3CopyRemove'; screenshot .swarm/runs/cycle-007-look-qa-favorites-raw-enums.png shows chips 'LAW', 'EASY', 'REALESTATE'. FavoritesView.tsx renders {f.prompt.subject}/{f.prompt.difficulty} directly while PromptCard.tsx maps through SUBJECT_LABELS/DIFFICULTY_LABELS."
+        },
+        {
+          "severity": "medium",
+          "where": "Generator — prompt card text (src/core/generate.ts line 48 + template data)",
+          "expected": "Prompt text ends in a 'Twist:' sentence — i.e. the body ends with punctuation before 'Twist:' starts a new sentence",
+          "found": "24 of 48 templates have no terminal punctuation, so half of all generations render a run-on where the body collides with the twist: '...counting down in plain language Twist: Let users export the deadline...'",
+          "evidence": "Deterministic rendered card (seed 12345, Law+Easy) shows 'counting down in plain language Twist: Let users export...' — screenshot .swarm/runs/cycle-007-look-qa-card-law-easy.png. Data probe via the live module: getTemplates({}) → {\"total\":48,\"noEndPunct\":24, examples: 're-01: ..._horizon} and shows the break-even point', 're-02: ...g but public data you scrape or hardcode'}. generate() appends `${resolved} Twist: ${twist}` with no separator."
+        },
+        {
+          "severity": "low",
+          "where": "Favorites tab — serial tag on saved entries (src/ui/FavoritesView.tsx line 107)",
+          "expected": ".serial-tag rendered as 'No XXXX' (format used on the generator prompt card, e.g. 'No 9812')",
+          "found": "Serial rendered without the 'No ' prefix: '9812', 'EDC3'",
+          "evidence": "Screenshot .swarm/runs/cycle-007-look-qa-favorites-raw-enums.png (serial chips read '9812' and 'EDC3'); same session's generator card showed 'No 9812' for the identical saved prompt (.swarm/runs/cycle-007-look-qa-card-law-easy.png)."
+        },
+        {
+          "severity": "low",
+          "where": "Prompt card Copy/Save buttons and Favorites Copy/Remove buttons (both viewports)",
+          "expected": "Action buttons styled consistently with the rest of the designed UI (styled chips, hero, tabs all have custom CSS)",
+          "found": "Copy/Save/Remove render as raw browser-default buttons inside otherwise fully styled cards; no CSS rules exist for .copy-button, .save-button, or .prompt-actions in src/styles/app.css (grep returned zero matches)",
+          "evidence": "Screenshots .swarm/runs/cycle-007-look-qa-card-law-easy.png and .swarm/runs/cycle-007-look-qa-mobile-375-generator.png show default-chrome buttons under the styled tag chips; `grep -n 'copy-button\\|save-button\\|prompt-actions\\|fav-item' src/styles/app.css` returned nothing."
+        }
+      ],
+      "screenshots": [
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-007-look-qa-generator-initial.png",
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-007-look-qa-card-law-easy.png",
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-007-look-qa-favorites-raw-enums.png",
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-007-look-qa-scout-stub.png",
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-007-look-qa-mobile-375-generator.png",
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-007-look-qa-mobile-375-favorites-empty.png"
+      ],
+      "server_log_tail": "> prompt-spark@0.1.0 dev\n> vite --port 5199 --strictPort\n\n  VITE v8.2.1  ready in 103 ms\n  ➜  Local:   http://localhost:5199/\n  ➜  Network: use --host to expose\n\n(no errors; page console clean: only vite connect + React DevTools notice. Server killed after run; port 5199 confirmed free.)"
+    },
+    "agents_used": 1,
+    "dead_agents": [],
+    "timestamp": "2026-08-09T03:55:00-04:00"
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Author"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Execute"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 3,
+      "title": "Look"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "live-look",
+      "phaseIndex": 3,
+      "phaseTitle": "Look",
+      "agentId": "a637102ba3203355a",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786261809585,
+      "queuedAt": 1786261806718,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "> prompt-spark@0.1.0 dev > vite --port 5199 --strictPort VI…",
+      "promptPreview": "You are the live-look agent in an overnight autonomous swarm — the one\nagent whose ONLY job is to LOOK at the running product the way a human\nuser would. Test suites can be green while the rendered app is garbage\n(two modules shadowing one global put \"new moon - 82% illuminated\" where\na score belonged, with 28/28 tests passing and no console error). You are\nthe defense against that class of bug.\n\n…",
+      "lastProgressAt": 1786262075891,
+      "tokens": 50306,
+      "toolCalls": 31,
+      "durationMs": 266306,
+      "resultPreview": "{\"findings\":[{\"severity\":\"medium\",\"where\":\"Favorites tab — saved prompt entries (src/ui/FavoritesView.tsx lines 105-106)\",\"expected\":\"Subject/difficulty chips on saved entries use display labels like the generator card: 'Real Estate', 'Law', 'Easy'\",\"found\":\"Raw internal enum values are rendered ('realEstate', 'law', 'easy'); the chip's uppercase styling turns the camelCase identifier into the sma…"
+    }
+  ],
+  "totalTokens": 50306,
+  "totalToolCalls": 31
+}

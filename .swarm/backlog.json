@@ -137,8 +137,8 @@
    "acceptance": "For any seed phrase, output is exactly 4 rungs in Weekend/Week/Month/Moonshot order each containing the seed phrase verbatim (tests cover mixed-case multi-word and punctuation-heavy seeds), plus exactly 3 remixes with distinct subject lenses, with ids hash('scout:'+seedPhrase+rung-or-lens-label).",
    "packages": [],
    "notes": "Uses rng/hash from T-005 and lens lists from src/data/index.ts.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "route_class": "core",
    "model": "fable"
   },
@@ -228,8 +228,8 @@
    "acceptance": "Clicking Surprise me renders a prompt card (class prompt-card) showing the serial (e.g. 'No A4F2') whose Copy button puts the full prompt text on the clipboard and whose Save button adds it to favorites by id hash(seed+templateId).",
    "packages": [],
    "notes": "Surprise me draws a fresh random seed then calls the pure generate; card is a pure render of the Prompt shape.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "model": "sonnet"
   },
   {
@@ -271,8 +271,8 @@
    "acceptance": "Saved prompts and scout items appear as fav-item entries after a page reload, each with a copy button and a remove button that deletes exactly that one entry.",
    "packages": [],
    "notes": "Pure consumer of the favorites store subscription hook.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "model": "sonnet"
   },
   {
@@ -381,9 +381,87 @@
    "acceptance": "Filter chips appear only on the Generator tab; Brain Scout and Favorites tabs show no FilterBar.",
    "packages": [],
    "model": "sonnet",
+   "attempts": 1,
+   "status": "done",
+   "notes": "cycle-6 look finding (low): App.tsx renders FilterBar outside the view conditional; filters are functionless on Scout/Favorites tabs"
+  },
+  {
+   "id": "T-018",
+   "title": "Fix useFavorites snapshot stability (infinite loop on mount)",
+   "kind": "fix",
+   "priority": 1,
+   "value": "H",
+   "effort": "S",
+   "deps": [],
+   "files_hint": [
+    "src/state/favorites.ts",
+    "src/state/favorites.test.ts"
+   ],
+   "acceptance": "A component using useFavorites() mounts without error and re-renders exactly once per store change.",
+   "packages": [],
+   "model": "sonnet",
    "attempts": 0,
    "status": "todo",
-   "notes": "cycle-6 look finding (low): App.tsx renders FilterBar outside the view conditional; filters are functionless on Scout/Favorites tabs"
+   "notes": "KI-1: loadFavorites returns fresh array each call; cache snapshot, invalidate on notify. Conductor-reproduced 'Maximum update depth exceeded'."
+  },
+  {
+   "id": "T-019",
+   "title": "FavoritesView: display labels for subject/difficulty + 'No ' serial prefix",
+   "kind": "fix",
+   "priority": 2,
+   "value": "M",
+   "effort": "S",
+   "deps": [],
+   "files_hint": [
+    "src/ui/FavoritesView.tsx"
+   ],
+   "acceptance": "Saved entries show 'Real Estate'/'Law'/'Easy'-style labels (never camelCase enums) and serials as 'No XXXX', matching the generator card.",
+   "packages": [],
+   "model": "sonnet",
+   "attempts": 0,
+   "status": "todo",
+   "notes": "c7 look findings 1+3 (med+low); reuse PromptCard's SUBJECT_LABELS/DIFFICULTY_LABELS (export or duplicate minimal map)"
+  },
+  {
+   "id": "T-020",
+   "title": "generate(): normalize terminal punctuation before Twist sentence",
+   "kind": "fix",
+   "priority": 2,
+   "value": "M",
+   "effort": "S",
+   "deps": [],
+   "files_hint": [
+    "src/core/generate.ts",
+    "src/core/generate.test.ts"
+   ],
+   "acceptance": "Every generated prompt reads as two sentences: body ends with terminal punctuation before 'Twist:' begins (no run-ons), for all 48 templates.",
+   "packages": [],
+   "model": "sonnet",
+   "attempts": 0,
+   "status": "todo",
+   "notes": "c7 look finding 2 (med): 24/48 templates lack end punctuation; fix at generate() single point (append '.' when body lacks .!?), add test over all templates"
+  },
+  {
+   "id": "T-021",
+   "title": "Style card action buttons (Copy/Save/Remove) to match design",
+   "kind": "polish",
+   "priority": 3,
+   "value": "M",
+   "effort": "S",
+   "deps": [
+    "T-019"
+   ],
+   "files_hint": [
+    "src/styles/app.css",
+    "src/ui/PromptCard.tsx",
+    "src/ui/FavoritesView.tsx"
+   ],
+   "acceptance": "Copy/Save/Remove buttons are visually styled consistent with the app (no browser-default chrome) at 375px and 1280px.",
+   "packages": [],
+   "model": "sonnet",
+   "attempts": 0,
+   "status": "todo",
+   "notes": "c7 look finding 4 (low); deps T-019 to avoid FavoritesView same-wave conflict"
   }
  ]
 }

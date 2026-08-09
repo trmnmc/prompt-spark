@@ -1,0 +1,122 @@
+{
+  "summary": "Parallel feature builders in isolated worktrees; returns claims for conductor verification",
+  "agentCount": 3,
+  "logs": [
+    "wave @ 2026-08-09T03:42:40-04:00 [T-006 \"Brain Scout core: 4-rung ladder + 3 remixes with tests\" (fable/M), T-010 \"Wire real generation: SurpriseHero + PromptCard render, copy, save + FilterBar scoped to Generator (folds in fix T-017)\" (sonnet/M), T-012 \"FavoritesView: list, copy, remove-one, empty state\" (sonnet/S)]"
+  ],
+  "result": {
+    "wave": [
+      {
+        "itemId": "T-006",
+        "status": "done",
+        "branch": "wave-400400-T-006",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-006.b5L5Dq",
+        "files_changed": [
+          "src/core/brainScout.ts",
+          "src/core/brainScout.test.ts"
+        ],
+        "summary": "Implemented pure deterministic expand(seedPhrase, seed) in src/core/brainScout.ts: exactly 4 rungs iterated from the frozen LADDER_RUNGS tuple (Weekend/Week/Month/Moonshot), each a 2-3 sentence brief scaled to its tier with the seed phrase embedded verbatim, template picked per rung from a 4-entry pool via mulberry32(seed) (one draw per rung, in order). Then exactly 3 remixes: successive draws into ALL_LENSES skipping duplicate lens strings (skipped draws still consumed, documented in the module header), plus one draw per remix for its 1-2 sentence template; each remix applies the lens to the verbatim phrase. Ids are unsigned djb2('scout:'+seedPhrase+label) as uppercase hex (seed-independent, so stable across calls and seeds). Reused mulberry32/djb2 from src/core/rng.ts, no reimplementation. Wrote 16 vitest cases in src/core/brainScout.test.ts covering exact rung count/order, verbatim containment for 'my cool app', 'Rent vs Buy Helper', and \"grandma's recipe-box, v2!\" in both rungs and remixes, deep-equal determinism, different seeds giving different rung texts, 3 distinct lenses, uppercase-hex id format, exact hash formula for rung and remix ids, and id stability. Full suite (106 tests, 6 files) and tsc --noEmit both pass. Note: the worktree had no node_modules; I symlinked the main checkout's node_modules into the worktree (untracked, not committed) to run vitest — no manifests touched, nothing installed, main repo unmodified. TDD followed: tests written first, watched them fail on startup, then implemented. Commit 316e224 on the wave branch only.",
+        "self_test_output": " RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-006.b5L5Dq\n\n\n Test Files  6 passed (6)\n      Tests  106 passed (106)\n   Start at  03:45:08\n   Duration  682ms (transform 318ms, setup 0ms, import 487ms, tests 94ms, environment 2.55s)"
+      },
+      {
+        "itemId": "T-010",
+        "status": "done",
+        "branch": "wave-400400-T-010",
+        "worktree": "/private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-010.aS6RF6",
+        "files_changed": [
+          "src/ui/App.tsx",
+          "src/ui/App.test.tsx",
+          "src/ui/PromptCard.tsx",
+          "src/ui/SurpriseHero.tsx"
+        ],
+        "summary": "Wired the real generator path end to end. App.tsx now computes `const prompt = useMemo(() => seed==null ? undefined : generate(seed, filters), [seed, filters])` and renders it via PromptCard; SurpriseHero, FilterBar, and PromptCard were moved inside the `view === 'generator'` conditional so filter chips no longer render on Brain Scout / Favorites (folds in T-017). PromptCard.tsx got a full render: prompt.text, three .tag-chip chips (subject label, difficulty label, timeBand), .serial-tag showing \"No <XXXX>\", a Copy button (navigator.clipboard?.writeText guarded for jsdom, flips label to 'Copied!'), and a Save button (addFavorite({kind:'prompt', prompt}), flips to 'Saved ✓' on success or if already saved per loadFavorites/favId; state resyncs via useEffect keyed on prompt.id). SurpriseHero.tsx dropped its seed prop and placeholder text now that PromptCard renders the real card. App.test.tsx replaced the placeholder-text tests with: real .prompt-card assertions (contains 'Twist:', .serial-tag matches /^No [0-9A-F]{4}$/), a subject-filter-then-regenerate test whose card's first tag-chip matches the filter label, filter-chip absence on Brain Scout/Favorites, a clipboard-mocked Copy test asserting writeText was called with the exact prompt text and the button flips to 'Copied!', and a Save test asserting the button flips to 'Saved ✓' and localStorage gets one favorites entry of kind 'prompt'. Ran `npx tsc -b` clean (found and fixed a real TS narrowing issue: closures over the `prompt` param weren't narrowed post-null-check, fixed by binding to a local const). Reverted incidental .tsbuild/*.tsbuildinfo changes from that tsc run before committing so only the four in-scope files landed. Worktree had no node_modules (fresh git worktree); symlinked it to the main repo's node_modules exactly as sibling wave worktrees (T-005, T-009) already do — no manifest/lockfile touched, no install run.",
+        "self_test_output": "RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-010.aS6RF6\n\n Test Files  5 passed (5)\n      Tests  94 passed (94)\n   Start at  03:48:22\n   Duration  665ms (transform 251ms, setup 0ms, import 382ms, tests 108ms, environment 2.01s)"
+      },
+      {
+        "itemId": "T-012",
+        "status": "done",
+        "branch": "wave-400400-T-012",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-012.vJhIBW",
+        "files_changed": [
+          "src/ui/FavoritesView.tsx"
+        ],
+        "summary": "Replaced the FavoritesView stub with the real list. Each Favorite renders as a .fav-item card: kind:'prompt' shows prompt.text (CSS line-clamp truncation via inline style, full text in the title attribute), subject + difficulty .tag-chip chips, and a .serial-tag; kind:'scout' shows label + text. Every card has a Copy button (navigator.clipboard?.writeText of the full text, guarded for an undefined clipboard, flips to 'Copied!' for 1.5s) and a Remove button that calls removeFavorite(favId(f)) with that card's exact id, deleting only that entry. Empty state keeps the exact 'No favorites yet' text (App.test.tsx asserts this string verbatim) with a new playful nudge line ('Spark something and hit Save.') placed as a sibling outside the .empty-state element so the existing assertion still passes.\n\nImportant finding during implementation: the store's useFavorites() hook (src/state/favorites.ts, out of this item's file scope) violates useSyncExternalStore's snapshot-stability contract — loadFavorites() returns a brand-new array reference on every call, so React treats every render as \"changed\" and spins into an immediate \"Maximum update depth exceeded\" infinite loop the instant any component calls the hook, even with zero favorites. I proved this two ways: (1) reverting FavoritesView to the original stub, which never calls the hook, and the full suite passes clean; (2) mounting a bare <FavoritesView/> using useFavorites() in isolation, which crashes the same way. Rather than widen scope into favorites.ts, I implemented a local subscription inside FavoritesView.tsx using the store's other exported primitives (loadFavorites + subscribe) via plain useState/useEffect — same live data source, same localStorage persistence across reload, same notify()-driven updates on add/remove from anywhere in the app, but without the unstable-snapshot bug. This is a deviation from the conductor context's literal \"render useFavorites() list\" instruction, made necessary because that hook is currently broken; the acceptance criteria itself (fav-item entries after reload, copy, remove-exactly-one) is fully met. Flagging src/state/favorites.ts's useFavorites for a follow-up fix (memoize/cache the snapshot so repeated reads of an unchanged store return the same reference) — noted in the commit message for the conductor.\n\nVerified end-to-end with a throwaway diagnostic test (written, run, then deleted before committing — not part of the file scope so not retained): both fav kinds render with correct chips/serial-tag, Copy calls clipboard.writeText with the full text and flips label, Copy is a no-op-but-safe when clipboard is undefined, Remove deletes exactly one entry (verified via localStorage contents) and persists across an unmount/remount that simulates a page reload, and the empty state's exact text + nudge line render correctly. tsc -b is clean and the full committed vitest suite (90 tests, unmodified files) passes. Only src/ui/FavoritesView.tsx was created/modified; committed on wave-400400-T-012 in the isolated worktree. A node_modules symlink into the target repo's node_modules was added locally to run the toolchain (gitignored, not committed) and .tsbuild artifacts touched by tsc were reverted before committing.",
+        "self_test_output": " RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-012.vJhIBW\n\n Test Files  5 passed (5)\n      Tests  90 passed (90)\n   Start at  03:48:19\n   Duration  953ms (transform 390ms, setup 0ms, import 552ms, tests 123ms, environment 3.23s)"
+      }
+    ],
+    "dead_items": [],
+    "timestamp": "2026-08-09T03:42:40-04:00"
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Build"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "builder-T-006",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "aace3c8d879e4f339",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786261396544,
+      "queuedAt": 1786261394887,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-006",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-006.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786261550085,
+      "tokens": 40863,
+      "toolCalls": 13,
+      "durationMs": 153540,
+      "resultPreview": "{\"itemId\":\"T-006\",\"status\":\"done\",\"branch\":\"wave-400400-T-006\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-006.b5L5Dq\",\"files_changed\":[\"src/core/brainScout.ts\",\"src/core/brainScout.test.ts\"],\"summary\":\"Implemented pure deterministic expand(seedPhrase, seed) in src/core/brainScout.ts: exactly 4 rungs iterated from the frozen LADDER_RUNGS tuple (Weekend/Week/Month/Moonshot),…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "builder-T-010",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "a558f5a455cda1cef",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786261396554,
+      "queuedAt": 1786261394887,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-010",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-010.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786261713707,
+      "tokens": 75076,
+      "toolCalls": 47,
+      "durationMs": 317152,
+      "resultPreview": "{\"itemId\":\"T-010\",\"status\":\"done\",\"branch\":\"wave-400400-T-010\",\"worktree\":\"/private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-010.aS6RF6\",\"files_changed\":[\"src/ui/App.tsx\",\"src/ui/App.test.tsx\",\"src/ui/PromptCard.tsx\",\"src/ui/SurpriseHero.tsx\"],\"summary\":\"Wired the real generator path end to end. App.tsx now computes `const prompt = useMemo(() => seed==null ? undefined : generate(seed…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "builder-T-012",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "a1063d4a0ac0b54ba",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786261396550,
+      "queuedAt": 1786261394887,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-012",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-012.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786261715295,
+      "tokens": 75831,
+      "toolCalls": 32,
+      "durationMs": 318745,
+      "resultPreview": "{\"itemId\":\"T-012\",\"status\":\"done\",\"branch\":\"wave-400400-T-012\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-012.vJhIBW\",\"files_changed\":[\"src/ui/FavoritesView.tsx\"],\"summary\":\"Replaced the FavoritesView stub with the real list. Each Favorite renders as a .fav-item card: kind:'prompt' shows prompt.text (CSS line-clamp truncation via inline style, full text in the title attrib…"
+    }
+  ],
+  "totalTokens": 191770,
+  "totalToolCalls": 92
+}
