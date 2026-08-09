@@ -461,8 +461,8 @@
    "acceptance": "Copy/Save/Remove buttons are visually styled consistent with the app (no browser-default chrome) at 375px and 1280px.",
    "packages": [],
    "model": "sonnet",
-   "attempts": 0,
-   "status": "todo",
+   "attempts": 1,
+   "status": "done",
    "notes": "c7 look finding 4 (low); deps T-019 to avoid FavoritesView same-wave conflict"
   }
  ]
