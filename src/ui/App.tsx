@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { generate } from '../core/generate'
 import { decodeShare, encodeShare } from '../core/share'
@@ -31,6 +31,20 @@ export default function App() {
   // Pure downstream of seed + filters — generate() itself never touches
   // Math.random; randomness lives only at the UI boundary below.
   const prompt = useMemo(() => (seed == null ? undefined : generate(seed, filters)), [seed, filters])
+
+  // Keep the address bar in sync with what's actually on screen. Without
+  // this, the URL stays pinned to whatever seed it loaded with (e.g. a
+  // share link) even after Surprise me / filter changes swap in a new
+  // prompt, so copying the address bar shares a prompt the user isn't
+  // looking at, and a reload discards the current prompt and silently
+  // re-renders the stale one. replaceState (not push) so every spark/
+  // filter tweak doesn't spam browser history.
+  useEffect(() => {
+    if (seed == null) return
+    const qs = encodeShare({ seed, filters })
+    const url = `${window.location.pathname}?${qs}${window.location.hash}`
+    window.history.replaceState(null, '', url)
+  }, [seed, filters])
 
   function handleSpark() {
     // Randomness lives here, at the UI boundary — everything downstream

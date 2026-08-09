@@ -10,6 +10,12 @@ let root: Root
 
 beforeEach(() => {
   localStorage.clear()
+  // App now keeps the address bar in sync with seed+filters via
+  // history.replaceState (NH1 fix), which mutates window.location for the
+  // rest of the test run since jsdom's window/history persist across
+  // tests. Reset to a bare path before each test so one test's sparked
+  // seed/filters can't leak into the next test's initial decodeShare().
+  window.history.replaceState(null, '', '/')
   container = document.createElement('div')
   document.body.appendChild(container)
   act(() => {

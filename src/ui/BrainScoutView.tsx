@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { expand } from '../core/brainScout'
 import type { ScoutResult } from '../core/types'
-import { addFavorite, favId, loadFavorites } from '../state/favorites'
+import { addFavorite, favId, loadFavorites, removeFavorite } from '../state/favorites'
 
 /** Randomness lives only at this UI boundary — expand() itself is pure. */
 function randomSeed(): number {
@@ -23,7 +23,18 @@ interface ScoutCardProps {
  */
 function ScoutCard({ className, label, text, id }: ScoutCardProps) {
   const [copied, setCopied] = useState(false)
-  const [saved, setSaved] = useState(() => loadFavorites().some((f) => favId(f) === id))
+  // Ids are deliberately seed-independent (same phrase+label always hashes
+  // to the same id — see brainScout.ts), so a Re-scout draw can change
+  // `text` while `id` (and therefore this card's React key) stays put. A
+  // plain useState initializer would only run once at mount and go stale
+  // the moment Re-scout swaps in new text under the same id/key, so the
+  // saved flag is recomputed from the store whenever the displayed text
+  // (or id) changes, not just on mount.
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    setSaved(loadFavorites().some((f) => favId(f) === id && f.kind === 'scout' && f.text === text))
+  }, [id, text])
 
   async function handleCopy() {
     // navigator.clipboard is undefined in jsdom / some embedded contexts —
@@ -40,9 +51,16 @@ function ScoutCard({ className, label, text, id }: ScoutCardProps) {
   }
 
   function handleSave() {
-    addFavorite({ kind: 'scout', label, text, id })
-    // addFavorite() returns false only when a duplicate with this id
-    // already exists — either outcome means the item is now saved.
+    const added = addFavorite({ kind: 'scout', label, text, id })
+    // addFavorite() no-ops (returns false) when a favorite with this id
+    // already exists — which, because ids are seed-independent, can be a
+    // STALE entry saved under a previous Re-scout draw's text. Replace it
+    // so the text actually on screen is what ends up persisted, instead
+    // of silently keeping the old wording.
+    if (!added) {
+      removeFavorite(id)
+      addFavorite({ kind: 'scout', label, text, id })
+    }
     setSaved(true)
   }
 
