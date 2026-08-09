@@ -20,8 +20,10 @@ build tonight or an idea expanded into something bigger. Used on desktop and pho
 <!-- The PLAN gate holds until every box is covered by a backlog item.
      Checked off only after conductor verification, never by claim. -->
 
-- [ ] Subject packs: curated prompt templates for Real Estate, Law, Finance, Science
+- [x] Subject packs: curated prompt templates for Real Estate, Law, Finance, Science
       (≥10 base prompts per subject, each with fill-in variables that get randomized)
+      <!-- verified cycle 4: 12 templates/pack, validatePack=[], all difficulties -->
+
 - [ ] Randomizer / "Surprise me" button: one tap generates a complete project prompt
       (subject × template × variables × twist), seedable for deterministic testing
 - [ ] Difficulty + time-estimate tags on every prompt (easy/medium/hard mapped to

@@ -93,8 +93,8 @@
    "acceptance": "A single registry exposes all four packs plus per-subject lens lists, and tests pin >=10 templates per pack, non-empty template sets for every subject x difficulty combo, and schema validity of every entry.",
    "packages": [],
    "notes": "Tests ship with the module per project convention.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "model": "sonnet"
   },
   {
