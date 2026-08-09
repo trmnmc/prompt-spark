@@ -78,10 +78,10 @@ function ScoutCard({ className, label, text, id }: ScoutCardProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0 }}>{text}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-          <button type="button" onClick={handleCopy}>
+          <button type="button" className="action-btn" onClick={handleCopy}>
             {copied ? 'Copied!' : 'Copy'}
           </button>
-          <button type="button" onClick={handleSave}>
+          <button type="button" className="action-btn" onClick={handleSave}>
             {saved ? 'Saved ✓' : 'Save'}
           </button>
         </div>

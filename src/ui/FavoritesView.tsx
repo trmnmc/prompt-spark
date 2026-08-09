@@ -146,10 +146,10 @@ export default function FavoritesView() {
                 flexShrink: 0,
               }}
             >
-              <button type="button" onClick={() => handleCopy(id, fullText)}>
+              <button type="button" className="action-btn" onClick={() => handleCopy(id, fullText)}>
                 {isCopied ? 'Copied!' : isFailed ? 'Copy failed' : 'Copy'}
               </button>
-              <button type="button" onClick={() => handleRemove(id)}>
+              <button type="button" className="action-btn action-btn--danger" onClick={() => handleRemove(id)}>
                 Remove
               </button>
             </div>
