@@ -1,0 +1,62 @@
+{
+  "summary": "Parallel feature builders in isolated worktrees; returns claims for conductor verification",
+  "agentCount": 1,
+  "logs": [
+    "wave @ 2026-08-09T02:58:30-04:00 [T-001 \"Frozen Layer 1 contract (Vite config, entry, core types, data schema, token CSS)\" (fable/M)]"
+  ],
+  "result": {
+    "wave": [
+      {
+        "itemId": "T-001",
+        "status": "done",
+        "branch": "wave-300400-T-001",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-001.2tC08w",
+        "files_changed": [
+          "vite.config.ts",
+          "index.html",
+          "tsconfig.json",
+          "tsconfig.node.json",
+          "src/main.tsx",
+          "src/ui/App.tsx",
+          "src/core/types.ts",
+          "src/data/schema.ts",
+          "src/styles/tokens.css"
+        ],
+        "summary": "Frozen Layer 1 contract landed on wave-300400-T-001 (commit e918a6b), worktree derivation asserted (git-common-dir resolves to /Users/truman/Projects/prompt-spark/.git, .swarm/SPEC.md present). Built: vite.config.ts (@vitejs/plugin-react, dev port 5199, vitest jsdom env, include src/**/*.test.ts{,x}, passWithNoTests); strict tsconfig.json + composite tsconfig.node.json (buildinfo/declarations confined to untracked ./.tsbuild, not committed) so 'tsc -b' passes; index.html titled 'Prompt Spark' mounting /src/main.tsx; src/main.tsx (React createRoot + StrictMode, imports tokens.css) with minimal placeholder src/ui/App.tsx (13 lines, uses .prompt-card/.serial-tag/.tag-chip); src/core/types.ts with the full frozen contract (Subject, Difficulty, DIFFICULTY_TO_TIME, LADDER_RUNGS/LadderRung, Template, GeneratedPrompt, Filters, ScoutRung/ScoutRemix/ScoutResult, function-signature types for mulberry32/djb2/promptId/generate/expand, FAVORITES_KEY, Favorite union); src/data/schema.ts (PackEntry, LensList, SubjectPack, validatePack returning string[] violations with registry-level difficulty check explicitly deferred); src/styles/tokens.css (warm coral/amber-on-cream palette with ink text, prefers-color-scheme dark overrides, spacing/radius/type-scale custom properties, all 9 frozen classes with designed base styles). Verified boot success live: vite dev on :5199 serves the page with title 'Prompt Spark' and tokens.css applied (curl output confirmed), tsc -b exit 0, vitest run exit 0. Notes for conductor: (1) package.json/package-lock.json/.gitignore are UNTRACKED in the shared repo, so the worktree lacked them; I copied them byte-identical (uncommitted) and symlinked the shared node_modules to run the toolchain — none modified, though vite dev wrote its normal gitignored dep cache to node_modules/.vite/deps. (2) tsconfig.json, tsconfig.node.json, and src/ui/App.tsx were absent from the strict file-scope list but explicitly mandated by the item text ('Also tsconfig.json + tsconfig.node.json as needed', 'CREATE src/ui/App.tsx'); I created them per the item text and flag the scope-list omission here. (3) File scope included no test location and the item defines pass-with-no-tests as the green state, so no test files were written; acceptance was verified by the three real boot-success commands above.",
+        "self_test_output": "$ npx tsc -b\nTSC_EXIT=0\n\n$ npx vitest run\n RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-001.2tC08w\n\nNo test files found, exiting with code 0\n\ninclude: src/**/*.test.ts, src/**/*.test.tsx\nexclude:  **/node_modules/**, **/.git/**\n\nVITEST_EXIT=0\n\n$ curl -s http://localhost:5199/ | grep title\n    <title>Prompt Spark</title>"
+      }
+    ],
+    "dead_items": [],
+    "timestamp": "2026-08-09T02:58:30-04:00"
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Build"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "builder-T-001",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "a7d0404d32e4e0e10",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786258795457,
+      "queuedAt": 1786258792692,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-001",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-001.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786259204322,
+      "tokens": 52570,
+      "toolCalls": 25,
+      "durationMs": 408865,
+      "resultPreview": "{\"itemId\":\"T-001\",\"status\":\"done\",\"branch\":\"wave-300400-T-001\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-001.2tC08w\",\"files_changed\":[\"vite.config.ts\",\"index.html\",\"tsconfig.json\",\"tsconfig.node.json\",\"src/main.tsx\",\"src/ui/App.tsx\",\"src/core/types.ts\",\"src/data/schema.ts\",\"src/styles/tokens.css\"],\"summary\":\"Frozen Layer 1 contract landed on wave-300400-T-001 (commit e918…"
+    }
+  ],
+  "totalTokens": 52570,
+  "totalToolCalls": 25
+}

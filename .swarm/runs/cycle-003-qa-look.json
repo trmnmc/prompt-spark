@@ -1,0 +1,65 @@
+{
+  "summary": "QA against the live product: spec-only scenario author, executor, and a live-look agent; cheap look-only mode for post-merge checks",
+  "agentCount": 1,
+  "logs": [
+    "qa-verify @ 2026-08-09T03:10:00-04:00 | mode look | cycle-003-look | models a/e/l: fable/sonnet/fable",
+    "qa-verify done: 0 scenario(s), 0 fail(s), 0 look finding(s)"
+  ],
+  "result": {
+    "runId": "qa-verify@2026-08-09T03:10:00-04:00",
+    "mode": "look",
+    "scenarios": [],
+    "results": [],
+    "look": {
+      "findings": [],
+      "screenshots": [
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-003-look-qa-desktop.png",
+        "/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-003-look-qa-mobile.png"
+      ],
+      "server_log_tail": "> prompt-spark@0.1.0 dev\n> vite --port 5199 --strictPort\n\n  VITE v8.2.1  ready in 103 ms\n\n  ➜  Local:   http://localhost:5199/\n  ➜  Network: use --host to expose"
+    },
+    "agents_used": 1,
+    "dead_agents": [],
+    "timestamp": "2026-08-09T03:10:00-04:00"
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Author"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Execute"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 3,
+      "title": "Look"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "live-look",
+      "phaseIndex": 3,
+      "phaseTitle": "Look",
+      "agentId": "afd6ffe9101f24c9c",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786259300163,
+      "queuedAt": 1786259298346,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "> prompt-spark@0.1.0 dev > vite --port 5199 --strictPort VI…",
+      "promptPreview": "You are the live-look agent in an overnight autonomous swarm — the one\nagent whose ONLY job is to LOOK at the running product the way a human\nuser would. Test suites can be green while the rendered app is garbage\n(two modules shadowing one global put \"new moon - 82% illuminated\" where\na score belonged, with 28/28 tests passing and no console error). You are\nthe defense against that class of bug.\n\n…",
+      "lastProgressAt": 1786259396509,
+      "tokens": 36094,
+      "toolCalls": 17,
+      "durationMs": 96345,
+      "resultPreview": "{\"findings\":[],\"screenshots\":[\"/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-003-look-qa-desktop.png\",\"/Users/truman/Projects/prompt-spark/.swarm/runs/cycle-003-look-qa-mobile.png\"],\"server_log_tail\":\"> prompt-spark@0.1.0 dev\\n> vite --port 5199 --strictPort\\n\\n  VITE v8.2.1  ready in 103 ms\\n\\n  ➜  Local:   http://localhost:5199/\\n  ➜  Network: use --host to expose\"}"
+    }
+  ],
+  "totalTokens": 36094,
+  "totalToolCalls": 17
+}

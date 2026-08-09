@@ -28,8 +28,8 @@
     "jsdom"
    ],
    "notes": "Layer 1 is frozen after this item ships \u2014 no other item may edit these files. All Vitest/jsdom devDeps land here so no later item touches package.json.",
-   "status": "todo",
-   "attempts": 0,
+   "status": "done",
+   "attempts": 1,
    "route_class": "core",
    "model": "fable"
   },
