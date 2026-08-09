@@ -1,0 +1,56 @@
+{
+  "summary": "Parallel feature builders in isolated worktrees; returns claims for conductor verification",
+  "agentCount": 1,
+  "logs": [
+    "wave @ 2026-08-09T04:38:00-04:00 [T-019 \"FavoritesView display labels + serial prefix; PromptCard copy-failure state; scout test\" (sonnet/S)]"
+  ],
+  "result": {
+    "wave": [
+      {
+        "itemId": "T-019",
+        "status": "done",
+        "branch": "wave-000400-T-019",
+        "worktree": "/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-019.GS4jPz",
+        "files_changed": [
+          "src/ui/PromptCard.tsx",
+          "src/ui/FavoritesView.tsx",
+          "src/ui/App.test.tsx"
+        ],
+        "summary": "Fixed all three reproduced findings in one worktree. (F1) Exported SUBJECT_LABELS/DIFFICULTY_LABELS from PromptCard.tsx (were module-private); FavoritesView.tsx now imports and uses both maps instead of raw enum values (was rendering e.g. REALESTATE via .tag-chip uppercase), and its serial-tag now renders as 'No {serial}' matching the generator card format — the prior fixer's time-band chip was left untouched. (F4) PromptCard's Copy handler now uses a tri-state (idle/copied/failed): missing navigator.clipboard.writeText or a rejected write flips the button to 'Copy failed' instead of silently doing nothing. FavoritesView's own Copy handler shared the same silent-fallthrough bug (guarded optional chain with a no-op .catch), so it got the same fix, reusing its existing 1500ms setTimeout reset pattern for a 'Copy failed' state alongside the existing 'Copied!' one. (F7) Added one test to App.test.tsx that switches to the Brain Scout tab, types a phrase into the seed-idea input (via native-setter + input-event dispatch since it's a controlled input), submits the form, and asserts 4 .ladder-rung + 3 .remix-card cards render with the phrase verbatim in the first rung's text. All pre-existing tests were left unchanged. Verified with `npx vitest run` (117/117 passing, up from 116) and `npx tsc -b` (clean, no output). Note: had to symlink node_modules from the target repo into the worktree to run the suite at all (the worktree had no node_modules of its own) — this symlink is untracked/uncommitted and does not appear in the commit.",
+        "self_test_output": " RUN  v4.1.10 /private/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-019.GS4jPz\n\n\n Test Files  6 passed (6)\n      Tests  117 passed (117)\n   Start at  04:34:06\n   Duration  2.24s (transform 856ms, setup 0ms, import 1.40s, tests 450ms, environment 8.87s)"
+      }
+    ],
+    "dead_items": [],
+    "timestamp": "2026-08-09T04:38:00-04:00"
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Build"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "builder-T-019",
+      "phaseIndex": 1,
+      "phaseTitle": "Build",
+      "agentId": "a13dac59399752be8",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786264159572,
+      "queuedAt": 1786264155129,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "T-019",
+      "promptPreview": "You are a feature builder in an overnight autonomous swarm. Your FIRST\naction is to provision your own private worktree OF THE TARGET REPO —\ndo not trust whatever directory you wake up in (KI-1 2026-08-09: a\nharness-provided worktree can derive from the WRONG repo):\n\n## Step 0 — provision + assert (before touching anything)\n1. WT=$(mktemp -d \"${TMPDIR:-/tmp}/wave-T-019.XXXXXX\")\n2. git -C \"/Users/t…",
+      "lastProgressAt": 1786264460200,
+      "tokens": 66897,
+      "toolCalls": 41,
+      "durationMs": 300628,
+      "resultPreview": "{\"itemId\":\"T-019\",\"status\":\"done\",\"branch\":\"wave-000400-T-019\",\"worktree\":\"/var/folders/2k/kb97v5mx3vgc6htpvrx881bw0000gn/T/wave-T-019.GS4jPz\",\"files_changed\":[\"src/ui/PromptCard.tsx\",\"src/ui/FavoritesView.tsx\",\"src/ui/App.test.tsx\"],\"summary\":\"Fixed all three reproduced findings in one worktree. (F1) Exported SUBJECT_LABELS/DIFFICULTY_LABELS from PromptCard.tsx (were module-private); FavoritesVie…"
+    }
+  ],
+  "totalTokens": 66897,
+  "totalToolCalls": 41
+}
