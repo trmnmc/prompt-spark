@@ -408,19 +408,21 @@
    "id": "T-019",
    "title": "FavoritesView: display labels for subject/difficulty + 'No ' serial prefix",
    "kind": "fix",
-   "priority": 2,
+   "priority": 1,
    "value": "M",
    "effort": "S",
    "deps": [],
    "files_hint": [
-    "src/ui/FavoritesView.tsx"
+    "src/ui/FavoritesView.tsx",
+    "src/ui/PromptCard.tsx",
+    "src/ui/App.test.tsx"
    ],
    "acceptance": "Saved entries show 'Real Estate'/'Law'/'Easy'-style labels (never camelCase enums) and serials as 'No XXXX', matching the generator card.",
    "packages": [],
    "model": "sonnet",
    "attempts": 0,
    "status": "todo",
-   "notes": "c7 look findings 1+3 (med+low); reuse PromptCard's SUBJECT_LABELS/DIFFICULTY_LABELS (export or duplicate minimal map)"
+   "notes": "c7 look findings 1+3 (med+low); reuse PromptCard's SUBJECT_LABELS/DIFFICULTY_LABELS (export or duplicate minimal map) | review-fix F1 reproduced with repro output; fix branch conflicted, requeued; ALSO fold F4: PromptCard clipboard rejection path should surface a failed-copy state (catch -> \"Copy failed\" flip), and F7: add one App.test scout-flow assertion"
   },
   {
    "id": "T-020",

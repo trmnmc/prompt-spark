@@ -1,0 +1,444 @@
+{
+  "summary": "Adversarial review of the recent diff, reproduce findings, fix only what reproduced",
+  "agentCount": 7,
+  "logs": [
+    "review-fix @ 2026-08-09T04:09:00-04:00 | diff f528cd8..HEAD | 6 acceptance item(s) | models r/v/f: opus/fable/sonnet",
+    "review: 11 filed, 11 after true-duplicate merge (0 merged), carrying 8 (cap 8)",
+    "verify: 8 reproduced, 0 discarded, 3 over cap (unverified)",
+    "fix: 8 fix claim(s) across 3 fixer(s)"
+  ],
+  "result": {
+    "runId": "review-fix@2026-08-09T04:09:00-04:00",
+    "findings": [
+      {
+        "severity": "high",
+        "file": "src/core/generate.ts",
+        "line": 25,
+        "expected": "MH2: every prompt includes exactly one Twist sentence with clean punctuation. withTerminalPunctuation() must not append a second terminal mark to a half that already ends in one, including when the mark sits inside a closing quote (e.g. `no survivors.\"`).",
+        "found": "withTerminalPunctuation tests only the LAST character (`/[.!?]$/`), so a twist ending in `.\"` fails the test and gets another '.' appended, producing a double terminal `.\".`. Two data twists trigger it: src/data/finance.ts:61 ('... from \"gentle nudge\" to \"no survivors.\"') and src/data/science.ts:80 ('... to pick a playful \"winner.\"'). generate(6, {}).text ends `...a slider from \"gentle nudge\" to \"no survivors.\".`; generate(244, {}).text ends `...to pick a playful \"winner.\".`. The dedicated T-020 test (src/core/generate.test.ts:156) asserts only /[.!?] Twist: / and /[.!?]$/, both of which the malformed string satisfies, so the suite is green while the criterion is violated. Hit rate is ~1.4% over unfiltered seeds and ~8% over {subject:'finance',difficulty:'easy'} (seeds 0, 21, 24, 32 all reproduce).",
+        "repro_hint": "cd /Users/truman/Projects/prompt-spark; in a vitest file: `import {generate} from './src/core/generate'; expect(generate(6,{}).text).not.toMatch(/[.!?][\"')]?[.!?]/)` — fails, actual tail `...to \"no survivors.\".`. Same for generate(0,{subject:'finance',difficulty:'easy'}) and generate(0,{subject:'science'}) (tail `...a playful \"winner.\".`).",
+        "lens": "reviewer-correctness",
+        "reproduced": true,
+        "repro_output": "Vitest repro (src/repro.verify.test.tsx, jsdom, vitest 4.1.10) — assertions on generate() output all PASSED, i.e. the defect is present:\n\nseed 6 tail   : \"ensity with a slider from \\\"gentle nudge\\\" to \\\"no survivors.\\\".\"\nseed 244 tail : \"element cards using their stats to pick a playful \\\"winner.\\\".\"\nfinance/easy seed 0 tail: \" from \\\"gentle nudge\\\" to \\\"no survivors.\\\".\"\nfinance/easy seed 21 tail: \" from \\\"gentle nudge\\\" to \\\"no survivors.\\\".\"\nfinance/easy seed 24 tail: \" from \\\"gentle nudge\\\" to \\\"no survivors.\\\".\"\nfinance/easy seed 32 tail: \" from \\\"gentle nudge\\\" to \\\"no survivors.\\\".\"\n\ngenerate(6,{}).text ends exactly with 'to \"no survivors.\".' and generate(244,{}).text ends exactly with 'a playful \"winner.\".' (double terminal '.\".' — expect(t).toMatch(/\\.\"\\.$/) passed for all six seeds). The same malformed string also satisfies the T-020 assertions /[.!?] Twist: / and /[.!?]$/ (both toMatch passed), and the untouched original suite runs green: 'Test Files 6 passed (6), Tests 116 passed (116)'. Cause matches withTerminalPunctuation() at src/core/generate.ts:25 testing only /[.!?]$/ so a twist ending '...survivors.\"' gets an extra '.' appended."
+      },
+      {
+        "severity": "high",
+        "file": "/Users/truman/Projects/prompt-spark/src/ui/FavoritesView.tsx",
+        "line": 105,
+        "expected": "MH3: every prompt card shows difficulty + the exact time-band label. A saved prompt card should render the same display labels as the generator card (src/ui/PromptCard.tsx:73-75 -> 'Real Estate' / 'Easy' / '1–2 hours').",
+        "found": "FavoritesView renders the raw internal enums {f.prompt.subject} (line 105) and {f.prompt.difficulty} (line 106) and renders NO time-band chip at all. Because .tag-chip sets text-transform:uppercase (src/styles/tokens.css:174), a Real Estate favorite displays the smashed identifier 'REALESTATE'. Measured live: generator card chips = 'Real Estate / Easy / 1–2 hours'; the same prompt in Favorites = 'realEstate / easy' with no time band. Backlog item T-019 for this is still status=todo in .swarm/backlog.json.",
+        "repro_hint": "npx vite --port 5199 --strictPort; open http://localhost:5199/?seed=7&subject=realEstate&difficulty=easy ; click Save; click the Favorites tab; run in console: Array.from(document.querySelectorAll('.fav-item .tag-chip')).map(e=>e.textContent) -> ['realEstate','easy'] (rendered uppercase as REALESTATE / EASY), and document.querySelectorAll('.fav-item').length chips contain no time-band string.",
+        "lens": "reviewer-specfit",
+        "reproduced": true,
+        "repro_output": "Repro (jsdom vitest in disposable worktree, exact reviewer flow: open /?seed=7&subject=realEstate&difficulty=easy -> Save -> Favorites tab -> read .fav-item .tag-chip textContent):\n\nGENERATOR CARD CHIPS: [\"Real Estate\",\"Easy\",\"1–2 hours\"]\nFAVORITES CARD CHIPS: [\"realEstate\",\"easy\"]\nFAV-ITEM COUNT: 1\nPROMPT (seed=7): \"Build a calculator that compares renting vs. buying a suburban duplex over 7 yea...\" (matches reviewer's)\n\nAssertionError: expected [ 'realEstate', 'easy' ] to deeply equal [ 'Real Estate', 'Easy', '1–2 hours' ]\n- Expected\n+ Received\n  [\n-   \"Real Estate\",\n-   \"Easy\",\n-   \"1–2 hours\",\n+   \"realEstate\",\n+   \"easy\",\n  ]\n ❯ src/ui/__repro__.test.tsx:70:22\n\nFavoritesView.tsx:105-107 renders {f.prompt.subject}/{f.prompt.difficulty} raw and no timeBand chip. Uppercase display confirmed from src/styles/tokens.css .tag-chip block (lines 165-177):\n.tag-chip { ... text-transform: uppercase; letter-spacing: 0.04em; ... }\n=> 'realEstate' displays as REALESTATE.\n\n.swarm/backlog.json T-019 (\"FavoritesView: display labels for subject/difficulty...\") captured: \"status\": \"todo\", \"attempts\": 0."
+      },
+      {
+        "severity": "medium",
+        "file": "src/ui/BrainScoutView.tsx",
+        "line": 26,
+        "expected": "MH5: Brain Scout results are saveable — the rung/remix text the user is looking at is what gets written to favorites, and the Save control reflects whether THAT text is saved.",
+        "found": "Scout ids are deliberately seed-independent (src/core/brainScout.ts:112-113 hashes phrase+label only). Re-scout keeps the same phrase, so every rung/remix keeps its id, so the React key at line 118/121 is unchanged and ScoutCard is never remounted; `saved` is a useState initializer (line 26) that never re-evaluates. Result: after Re-scout the card displays brand-new text while the button still reads 'Saved ✓', and clicking Save calls addFavorite with the same id, which src/state/favorites.ts:63 rejects as a duplicate — the newly displayed text is silently never persisted. Verified in jsdom: SAVED-1 text was 'Weekend sprint: turn \"time travel diary\" into a toy demo...', after Re-scout the card showed 'A weekend take on \"time travel diary\": strip it down...', store length stayed 1 and store[0].text was still the OLD string (displayed !== stored). The same stale state occurs on a fresh page load: scouting a phrase that already has a saved rung renders 'Saved ✓' on text that is not in favorites.",
+        "repro_hint": "cd /Users/truman/Projects/prompt-spark; mount <BrainScoutView/> in jsdom, type 'time travel diary', click 'Scout it', click Save on the first .ladder-rung, then click 'Re-scout' until the rung's <p> text changes, then click its Save button. Assert JSON.parse(localStorage.getItem('prompt-spark:favorites:v1'))[0].text === the currently displayed rung text — it is not; the button also already reads 'Saved ✓' before the second click.",
+        "lens": "reviewer-correctness",
+        "reproduced": true,
+        "repro_output": "Vitest jsdom repro: mounted <BrainScoutView/>, typed 'time travel diary', submitted, clicked Save on the first .ladder-rung, then clicked Re-scout until the rung's <p> text changed (changed on a re-scout draw), then inspected/clicked Save again. Captured output:\n\nSAVED-1 original text: \"Weekend sprint: turn \\\"time travel diary\\\" into a toy demo you can text to a friend. Pick the single most delightful moment of the idea and build only that. Everything else is a TODO comment — and that is exactly right for now.\"\nafter Re-scout shows : \"Give yourself 48 hours and make \\\"time travel diary\\\" barely real: a scrappy prototype that does one thing end to end. Cut every feature that does not directly demo the core idea, and celebrate shipping something ugly but alive.\"\nbutton before 2nd click: \"Saved ✓\"\nstore length after 2nd Save: 1\nstore[0].text: \"Weekend sprint: turn \\\"time travel diary\\\" into a toy demo...\" (the OLD string)\n\nAfter Re-scout the card displays brand-new text while the Save button already reads 'Saved ✓' (stale useState initializer at BrainScoutView.tsx:26, id unchanged because scoutId hashes phrase+label only). Clicking Save again left localStorage 'prompt-spark:favorites:v1' at length 1 with the OLD text — the displayed text was never persisted (asserted store[0].text === originalText and !== newText; both passed)."
+      },
+      {
+        "severity": "medium",
+        "file": "src/ui/FavoritesView.tsx",
+        "line": 106,
+        "expected": "MH3: every prompt card shows difficulty + the exact time-band label (one of '1–2 hours' / 'an evening or two (3–6 hours)' / 'a weekend+ (10+ hours)').",
+        "found": "The favorites list renders saved prompts as cards but emits only <span class=\"tag-chip\">{f.prompt.subject}</span> and <span class=\"tag-chip\">{f.prompt.difficulty}</span> (lines 105-106) — the stored f.prompt.timeBand is never rendered anywhere in the file, and the difficulty is printed as the raw enum ('medium') rather than the display label used by PromptCard.tsx:15-19. Rendering FavoritesView with one seeded prompt favorite (timeBand 'an evening or two (3–6 hours)') produces .fav-item textContent 'Body. Twist: t.realEstatemediumAAAACopyRemove' — no time band present. No test asserts a time band in the favorites view.",
+        "repro_hint": "cd /Users/truman/Projects/prompt-spark; in a jsdom vitest file: localStorage.setItem('prompt-spark:favorites:v1', JSON.stringify([{kind:'prompt',prompt:{id:'AAAA',text:'Body. Twist: t.',subject:'realEstate',difficulty:'medium',timeBand:'an evening or two (3–6 hours)',seed:1,templateId:'re-01',serial:'AAAA'}}])); render <FavoritesView/>; expect(container.querySelector('.fav-item').textContent).toContain('an evening or two (3–6 hours)') — fails.",
+        "lens": "reviewer-correctness",
+        "reproduced": true,
+        "repro_output": "Ran the reviewer's exact jsdom repro: localStorage.setItem('prompt-spark:favorites:v1', JSON.stringify([{kind:'prompt',prompt:{id:'AAAA',text:'Body. Twist: t.',subject:'realEstate',difficulty:'medium',timeBand:'an evening or two (3–6 hours)',seed:1,templateId:'re-01',serial:'AAAA'}}])); render(<FavoritesView/>); expect .fav-item textContent toContain timeBand.\n\nCaptured output:\nFAV-ITEM textContent: \"Body. Twist: t.realEstatemediumAAAACopyRemove\"\n\nFAIL: AssertionError: expected 'Body. Twist: t.realEstatemediumAAAACo…' to contain 'an evening or two (3–6 hours)'\nExpected: \"an evening or two (3–6 hours)\"\nReceived: \"Body. Twist: t.realEstatemediumAAAACopyRemove\"\n ❯ src/ui/__repro__.test.tsx:99:26\n\nExactly matches the filed claim: timeBand never rendered, difficulty printed as raw enum 'medium'. Also confirmed no existing test asserts a time band in the favorites view (grep 'fav-item' over *.test.* -> only my repro file; favorites.test.ts is store-only)."
+      },
+      {
+        "severity": "medium",
+        "file": "/Users/truman/Projects/prompt-spark/src/ui/PromptCard.tsx",
+        "line": 58,
+        "expected": "MH4: Copy puts the full prompt text on the clipboard. The button's 'Copied!' confirmation should only appear when the text actually reached the clipboard; a failed/unavailable clipboard should not report success.",
+        "found": "The clipboard call is guarded (lines 50-57) and both the missing-API path and the rejection path fall through to an unconditional setCopied(true) on line 58, so the button reports 'Copied!' when nothing was copied. Same pattern at src/ui/App.tsx:54 ('Link copied!'), src/ui/BrainScoutView.tsx:46, and src/ui/FavoritesView.tsx:58. navigator.clipboard is undefined on any non-secure origin, which is exactly the mobile-first case the spec targets (opening the dev server from a phone at http://<lan-ip>:5199). Verified in jsdom (navigator.clipboard === undefined) and in Chromium.",
+        "repro_hint": "With the app open, run in the page console: Object.defineProperty(navigator,'clipboard',{value:undefined,configurable:true}); document.querySelector('.copy-button').click(); then read document.querySelector('.copy-button').textContent -> 'Copied!' while the clipboard is untouched. Same for .share-link-button -> 'Link copied!'.",
+        "lens": "reviewer-specfit",
+        "reproduced": true,
+        "repro_output": "Vitest jsdom repro (navigator.clipboard === undefined in jsdom, verified by expect(navigator.clipboard).toBeUndefined() passing). Rendered <PromptCard prompt={generate(6,{})}/>, clicked .copy-button:\n\nnavigator.clipboard: undefined\ncopy button after click: \"Copied!\"\n\nAlso rendered <App/>, clicked .surprise-hero then .share-link-button:\n\nshare button after click: \"Link copied!\"\n\nWith no clipboard API present at all, the guarded call at PromptCard.tsx:50-57 is skipped and the unconditional setCopied(true) at line 58 still fires, so the UI reports 'Copied!' / 'Link copied!' while nothing reached any clipboard. Reproduced exactly as filed for PromptCard and App's share button (the BrainScoutView/FavoritesView copies use the identical fall-through pattern per source inspection; not separately executed)."
+      },
+      {
+        "severity": "medium",
+        "file": "/Users/truman/Projects/prompt-spark/src/ui/App.tsx",
+        "line": 38,
+        "expected": "NH1 / share flow: the address bar is the surface users actually copy. After the displayed prompt changes (Surprise me, or a filter toggle) the URL should track it, or at minimum not keep advertising a different prompt; a reload should not silently discard what the user is looking at.",
+        "found": "App never writes to history — grep for history./pushState/replaceState over src/ finds no call in any non-test file. seed/filters live only in React state (lines 26-27, 38, 81). Opening a share link and then sparking leaves location.href pinned to the old ?seed=..., so copying the address bar shares a prompt that is not on screen, and reloading throws the user's current prompt away and re-renders the old shared one with no warning.",
+        "repro_hint": "Open http://localhost:5199/?seed=7&subject=realEstate&difficulty=easy (shows 'Build a calculator that compares renting vs. buying...'), click 'Surprise me' (text changes to a different prompt), then read location.href -> still '?seed=7&subject=realEstate&difficulty=easy'; press reload -> the seed-7 prompt returns and the sparked one is gone.",
+        "lens": "reviewer-specfit",
+        "reproduced": true,
+        "repro_output": "Repro (jsdom vitest): mounted App at /?seed=7&subject=realEstate&difficulty=easy, clicked Surprise me, read location, then simulated reload (unmount + fresh mount against same URL).\n\nCaptured:\nPROMPT BEFORE SPARK: \"Build a calculator that compares renting vs. buying a suburban duplex over 7 yea\"\nPROMPT AFTER SPARK:  \"Build a budgeting widget that estimates total setup expenses for moving into a s\"\nPROMPT CHANGED: true\nlocation.href AFTER SPARK: http://localhost:3000/?seed=7&subject=realEstate&difficulty=easy   <- still pinned to old seed\nPROMPT AFTER RELOAD == ORIGINAL SEED-7 PROMPT: true\nSPARKED PROMPT SURVIVED RELOAD: false\n\nFAIL: AssertionError: expected '?seed=7&subject=realEstate&difficulty…' not to be '?seed=7&subject=realEstate&difficulty…'\n\nStatic check matches claim: grep -rn 'pushState\\|replaceState\\|history\\.' src --include='*.ts*' -> only hits are comments/data strings and App.test.tsx test scaffolding; no history write anywhere in non-test source. App.tsx:26-27,38 keep seed/filters purely in React state."
+      },
+      {
+        "severity": "medium",
+        "file": "/Users/truman/Projects/prompt-spark/src/ui/BrainScoutView.tsx",
+        "line": 76,
+        "expected": "MH5: a scouted ladder (4 rungs + 3 remixes) that the user can copy and save should survive the natural round trip of checking the Favorites tab and coming back, or at least be reproducible.",
+        "found": "result and phrase are component-local state (lines 75-76) and App.tsx:92 conditionally unmounts BrainScoutView on every tab change, so switching tabs wipes the input and all 7 cards. Recovery is impossible: handleSubmit/handleRescout call randomSeed() (lines 9, 82, 87), so re-scouting the same phrase draws a fresh Math.random seed and produces different rung/remix text, and there is no seed input or share link on this view. Generator state does survive the same round trip (it lives in App), so the loss is inconsistent as well as silent.",
+        "repro_hint": "Brain Scout tab -> type 'a dog walking app' -> Scout it -> document.querySelectorAll('.ladder-rung').length === 4; click the Favorites tab, then click Brain Scout again -> .ladder-rung count is 0 and the input value is ''. Reproduced identically in jsdom by rendering <App/> and dispatching the same clicks.",
+        "lens": "reviewer-specfit",
+        "reproduced": true,
+        "repro_output": "Vitest jsdom repro: rendered <App/>, clicked the 'Brain Scout' tab, typed 'a dog walking app' into the seed-idea input, submitted the scout form, then clicked 'Favorites' tab and back to 'Brain Scout'. Captured output:\n\n.ladder-rung count after Scout it: 4\n.ladder-rung count after round trip: 0\ninput value after round trip: \"\"\n\nThe 4-rung ladder and the input contents are gone after the Favorites round trip (assertions after===0 and inputAfter.value==='' both passed), matching App.tsx:92 conditionally unmounting BrainScoutView ({view === 'scout' && <BrainScoutView />}) with result/phrase held as component-local useState (BrainScoutView.tsx:75-76). Recovery is non-deterministic as filed: handleSubmit/handleRescout seed from Math.random() (randomSeed() at line 9), and Finding 2's captured run shows re-scouting the same phrase produces different rung text."
+      },
+      {
+        "severity": "low",
+        "file": "src/ui/App.test.tsx",
+        "line": 59,
+        "expected": "MH5 is a rendering criterion ('Brain Scout renders exactly 4 ladder rungs in Weekend/Week/Month/Moonshot order ... plus exactly 3 remixes ... results copyable and saveable'), so the suite must exercise BrainScoutView, not only the pure expand() core.",
+        "found": "The only Brain Scout UI assertion in the whole test suite is `expect(container.querySelector('.scout-view')).not.toBeNull()` (src/ui/App.test.tsx:59). No test ever types a phrase, submits, or counts .ladder-rung / .remix-card elements, and no test clicks a scout Copy or Save button. src/core/brainScout.test.ts covers expand() only. Likewise no test renders FavoritesView with items or clicks its Remove button. This gap is what let the Re-scout save defect (finding above) land green.",
+        "repro_hint": "cd /Users/truman/Projects/prompt-spark && grep -rn 'ladder-rung\\|remix-card\\|BrainScoutView\\|FavoritesView' src --include='*.test.tsx' --include='*.test.ts' — returns no matches outside src/ui/BrainScoutView.tsx and src/ui/FavoritesView.tsx themselves; `npx vitest run` reports 116 passing tests with zero of them mounting either component.",
+        "lens": "reviewer-correctness",
+        "reproduced": true,
+        "repro_output": "$ grep -rn 'ladder-rung\\|remix-card\\|BrainScoutView\\|FavoritesView' src --include='*.test.tsx' --include='*.test.ts'\n(no matches; exit=1)\n\nOnly Brain Scout UI assertion in the suite is App.test.tsx:59:\n    expect(container.querySelector('.scout-view')).not.toBeNull()\n(no test types a phrase, submits, or counts .ladder-rung/.remix-card; grep 'scout' over tests hits only this line, the pure-core brainScout.test.ts id checks, and store-level favorites.test.ts fixtures). No test renders FavoritesView with items or clicks Remove — App.test.tsx:68 asserts only the empty state; grep 'fav-item|Remove' over tests -> zero matches.\n\n$ npx vitest run\n Test Files  6 passed (6)\n      Tests  116 passed (116)\n\nNuance vs the filed wording: App.test.tsx does indirectly mount BrainScoutView/FavoritesView by clicking tabs (that's how .scout-view exists at line 59, plus the favorites empty-state check), so 'zero of them mounting either component' is slightly overstated — but the substantive claim (no rung/remix/copy/save/remove/favorites-with-items coverage anywhere; 116 green tests despite it) is confirmed exactly as filed at App.test.tsx:59."
+      },
+      {
+        "severity": "low",
+        "file": "/Users/truman/Projects/prompt-spark/src/ui/App.tsx",
+        "line": 81,
+        "expected": "The 'Link copied!' confirmation should describe the link that is actually on the clipboard.",
+        "found": "linkCopied is only reset in handleSpark (line 39); FilterBar's onChange is wired straight to setFilters (line 81), so changing a filter regenerates the prompt while the share button keeps reading 'Link copied!'. The clipboard still holds the previous filters' URL, so the user believes the displayed prompt's link is copied when it is not.",
+        "repro_hint": "Spark a prompt, click 'Copy share link' (label becomes 'Link copied!'), then click the 'Law' subject chip: the .prompt-text changes but document.querySelector('.share-link-button').textContent is still 'Link copied!'. Confirmed live and in jsdom.",
+        "lens": "reviewer-specfit",
+        "reproduced": false,
+        "repro_output": "(not verified: over the per-pass cap of 8 findings — re-raise next review pass if still real)"
+      },
+      {
+        "severity": "low",
+        "file": "/Users/truman/Projects/prompt-spark/src/styles/app.css",
+        "line": 156,
+        "expected": "The Brain Scout submit button is the view's primary CTA: when enabled it should use cursor:pointer, and its disabled state should be visually distinguishable from its enabled state.",
+        "found": "`.scout-input-row button { ... cursor: not-allowed; }` applies unconditionally (rule at lines 148-157), a leftover from the T-009 stub. Measured on the live page with text typed: getComputedStyle(...).cursor === 'not-allowed' while button.disabled === false. With an empty input the button is genuinely disabled (BrainScoutView.tsx:107) but renders with identical colors/cursor, so a user who clicks it gets no action and no feedback of any kind.",
+        "repro_hint": "Brain Scout tab, type any text, then run: getComputedStyle(document.querySelector('.scout-input-row button')).cursor + ' disabled=' + document.querySelector('.scout-input-row button').disabled -> 'not-allowed disabled=false'.",
+        "lens": "reviewer-specfit",
+        "reproduced": false,
+        "repro_output": "(not verified: over the per-pass cap of 8 findings — re-raise next review pass if still real)"
+      },
+      {
+        "severity": "low",
+        "file": "/Users/truman/Projects/prompt-spark/src/ui/App.tsx",
+        "line": 26,
+        "expected": "A shared URL that carries share params but fails validation should tell the recipient the link is broken (error state), not present a normal-looking empty app.",
+        "found": "decodeShare returns null for any unrecognized seed/subject/difficulty (src/core/share.ts:59, 67, 73) and App silently falls back to seed=null/filters={} (lines 26-27), so PromptCard renders null (PromptCard.tsx:40-42). A recipient opening a mistyped or truncated link sees only the hero and filter chips with no card, no message, and no console output — indistinguishable from a first visit.",
+        "repro_hint": "Open http://localhost:5199/?seed=7&subject=Law (capitalized subject) or http://localhost:5199/?seed=abc : document.querySelector('.prompt-card') === null and .app-main innerText is just 'Surprise me ✨ / All / Real Estate / ...' with no error text; console is clean.",
+        "lens": "reviewer-specfit",
+        "reproduced": false,
+        "repro_output": "(not verified: over the per-pass cap of 8 findings — re-raise next review pass if still real)"
+      }
+    ],
+    "fixes": [
+      {
+        "finding_index": 0,
+        "branch": "worktree-wf_2dd4ae4c-008-5",
+        "claim": {
+          "status": "done",
+          "files_changed": [
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/core/generate.ts",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/core/generate.test.ts",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/ui/App.tsx",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/ui/BrainScoutView.tsx",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/ui/FavoritesView.tsx"
+          ],
+          "summary": "All three findings fixed and verified.\n\nFix 1 (generate.ts:25) — withTerminalPunctuation() tested only /[.!?]$/, so a twist ending in a closing quote (`no survivors.\"`) failed the check and got a spurious second '.' appended, producing '.\"'. Changed the regex to /[.!?][\"')]?$/ so a terminal mark inside a trailing quote/paren is recognized. Also updated the T-020 test in generate.test.ts, which was itself asserting the same flawed /[.!?]$/ pattern (the \"loophole\" the finding called out that let the bug stay green) — it now uses the quote-aware regex plus an explicit not.toMatch guard against the double-terminal shape.\n\nFix 2 (FavoritesView.tsx:106) — prompt favorite cards rendered only the raw subject/difficulty enum and never the stored timeBand. Added a DIFFICULTY_LABELS map (mirroring PromptCard.tsx) so difficulty renders as 'Medium' not 'medium', and added a new `<span className=\"tag-chip\">{f.prompt.timeBand}</span>` chip so the exact time-band label is shown, matching PromptCard's chip row.\n\nFix 3 (BrainScoutView.tsx:75-76 / App.tsx:92) — phrase and result were component-local useState, and App unmounts BrainScoutView on every tab change, silently destroying the ladder/remixes/input with no recovery (re-scout re-rolls Math.random). Lifted `scoutPhrase`/`scoutResult` state up into App.tsx (same pattern App already uses for generator seed/filters, which do survive tab switches) and turned BrainScoutView into a controlled component (phrase, onPhraseChange, result, onResultChange props). The ladder, remixes, and typed phrase now survive switching to Favorites and back to Brain Scout.\n\nVerified each of the three verifier-provided failing cases directly against the fix (in a scratch test file, removed after confirming, not committed): generate(6,{}) and generate(244,{}) no longer produce a double terminal mark; a seeded favorite with timeBand renders it in .fav-item; and a full App round-trip (Brain Scout -> Scout it -> Favorites -> Brain Scout) now keeps 4 .ladder-rung nodes and the typed input value intact. Full suite run clean afterward.",
+          "self_test_output": "$ npx vitest run\n RUN  v4.1.10 /Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5\n\n Test Files  6 passed (6)\n      Tests  116 passed (116)\n   Start at  04:24:57\n   Duration  3.61s (transform 1.24s, setup 0ms, import 1.90s, tests 623ms, environment 12.65s)",
+          "blocked_reason": ""
+        }
+      },
+      {
+        "finding_index": 3,
+        "branch": "worktree-wf_2dd4ae4c-008-5",
+        "claim": {
+          "status": "done",
+          "files_changed": [
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/core/generate.ts",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/core/generate.test.ts",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/ui/App.tsx",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/ui/BrainScoutView.tsx",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/ui/FavoritesView.tsx"
+          ],
+          "summary": "All three findings fixed and verified.\n\nFix 1 (generate.ts:25) — withTerminalPunctuation() tested only /[.!?]$/, so a twist ending in a closing quote (`no survivors.\"`) failed the check and got a spurious second '.' appended, producing '.\"'. Changed the regex to /[.!?][\"')]?$/ so a terminal mark inside a trailing quote/paren is recognized. Also updated the T-020 test in generate.test.ts, which was itself asserting the same flawed /[.!?]$/ pattern (the \"loophole\" the finding called out that let the bug stay green) — it now uses the quote-aware regex plus an explicit not.toMatch guard against the double-terminal shape.\n\nFix 2 (FavoritesView.tsx:106) — prompt favorite cards rendered only the raw subject/difficulty enum and never the stored timeBand. Added a DIFFICULTY_LABELS map (mirroring PromptCard.tsx) so difficulty renders as 'Medium' not 'medium', and added a new `<span className=\"tag-chip\">{f.prompt.timeBand}</span>` chip so the exact time-band label is shown, matching PromptCard's chip row.\n\nFix 3 (BrainScoutView.tsx:75-76 / App.tsx:92) — phrase and result were component-local useState, and App unmounts BrainScoutView on every tab change, silently destroying the ladder/remixes/input with no recovery (re-scout re-rolls Math.random). Lifted `scoutPhrase`/`scoutResult` state up into App.tsx (same pattern App already uses for generator seed/filters, which do survive tab switches) and turned BrainScoutView into a controlled component (phrase, onPhraseChange, result, onResultChange props). The ladder, remixes, and typed phrase now survive switching to Favorites and back to Brain Scout.\n\nVerified each of the three verifier-provided failing cases directly against the fix (in a scratch test file, removed after confirming, not committed): generate(6,{}) and generate(244,{}) no longer produce a double terminal mark; a seeded favorite with timeBand renders it in .fav-item; and a full App round-trip (Brain Scout -> Scout it -> Favorites -> Brain Scout) now keeps 4 .ladder-rung nodes and the typed input value intact. Full suite run clean afterward.",
+          "self_test_output": "$ npx vitest run\n RUN  v4.1.10 /Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5\n\n Test Files  6 passed (6)\n      Tests  116 passed (116)\n   Start at  04:24:57\n   Duration  3.61s (transform 1.24s, setup 0ms, import 1.90s, tests 623ms, environment 12.65s)",
+          "blocked_reason": ""
+        }
+      },
+      {
+        "finding_index": 6,
+        "branch": "worktree-wf_2dd4ae4c-008-5",
+        "claim": {
+          "status": "done",
+          "files_changed": [
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/core/generate.ts",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/core/generate.test.ts",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/ui/App.tsx",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/ui/BrainScoutView.tsx",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/ui/FavoritesView.tsx"
+          ],
+          "summary": "All three findings fixed and verified.\n\nFix 1 (generate.ts:25) — withTerminalPunctuation() tested only /[.!?]$/, so a twist ending in a closing quote (`no survivors.\"`) failed the check and got a spurious second '.' appended, producing '.\"'. Changed the regex to /[.!?][\"')]?$/ so a terminal mark inside a trailing quote/paren is recognized. Also updated the T-020 test in generate.test.ts, which was itself asserting the same flawed /[.!?]$/ pattern (the \"loophole\" the finding called out that let the bug stay green) — it now uses the quote-aware regex plus an explicit not.toMatch guard against the double-terminal shape.\n\nFix 2 (FavoritesView.tsx:106) — prompt favorite cards rendered only the raw subject/difficulty enum and never the stored timeBand. Added a DIFFICULTY_LABELS map (mirroring PromptCard.tsx) so difficulty renders as 'Medium' not 'medium', and added a new `<span className=\"tag-chip\">{f.prompt.timeBand}</span>` chip so the exact time-band label is shown, matching PromptCard's chip row.\n\nFix 3 (BrainScoutView.tsx:75-76 / App.tsx:92) — phrase and result were component-local useState, and App unmounts BrainScoutView on every tab change, silently destroying the ladder/remixes/input with no recovery (re-scout re-rolls Math.random). Lifted `scoutPhrase`/`scoutResult` state up into App.tsx (same pattern App already uses for generator seed/filters, which do survive tab switches) and turned BrainScoutView into a controlled component (phrase, onPhraseChange, result, onResultChange props). The ladder, remixes, and typed phrase now survive switching to Favorites and back to Brain Scout.\n\nVerified each of the three verifier-provided failing cases directly against the fix (in a scratch test file, removed after confirming, not committed): generate(6,{}) and generate(244,{}) no longer produce a double terminal mark; a seeded favorite with timeBand renders it in .fav-item; and a full App round-trip (Brain Scout -> Scout it -> Favorites -> Brain Scout) now keeps 4 .ladder-rung nodes and the typed input value intact. Full suite run clean afterward.",
+          "self_test_output": "$ npx vitest run\n RUN  v4.1.10 /Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5\n\n Test Files  6 passed (6)\n      Tests  116 passed (116)\n   Start at  04:24:57\n   Duration  3.61s (transform 1.24s, setup 0ms, import 1.90s, tests 623ms, environment 12.65s)",
+          "blocked_reason": ""
+        }
+      },
+      {
+        "finding_index": 1,
+        "branch": "worktree-wf_2dd4ae4c-008-6",
+        "claim": {
+          "status": "done",
+          "files_changed": [
+            "src/state/clipboard.ts",
+            "src/ui/App.tsx",
+            "src/ui/App.test.tsx",
+            "src/ui/BrainScoutView.tsx",
+            "src/ui/FavoritesView.tsx",
+            "src/ui/PromptCard.tsx"
+          ],
+          "summary": "Fixed all three findings:\n\nFix 1 (FavoritesView labels/time-band, T-019): Exported SUBJECT_LABELS/DIFFICULTY_LABELS from PromptCard.tsx (previously module-private) and imported them into FavoritesView.tsx, replacing the raw `{f.prompt.subject}`/`{f.prompt.difficulty}` enum rendering with the same display-label lookups the generator card uses. Added the missing time-band chip (`f.prompt.timeBand`) that was absent entirely. Favorites card chips for a Real Estate/Easy prompt now read \"Real Estate / Easy / 1–2 hours\", matching the generator card exactly instead of \"realEstate / easy\" (uppercased to \"REALESTATE / EASY\" by .tag-chip's text-transform) with no time band.\n\nFix 2 (false-positive copy confirmations): Added src/state/clipboard.ts with `copyToClipboard(text): Promise<boolean>` that returns whether the write actually reached the clipboard (false when navigator.clipboard is undefined, false on a rejected writeText). Replaced the guarded-but-unconditional-setCopied pattern in PromptCard.tsx, App.tsx (share-link copy), BrainScoutView.tsx, and FavoritesView.tsx with calls to this helper, only flipping to \"Copied!\"/\"Link copied!\" state when it resolves true. A missing/failing clipboard API no longer reports success.\n\nFix 3 (missing UI test coverage for Brain Scout / Favorites): Added tests to src/ui/App.test.tsx: (a) a clipboard-unavailable copy test proving the button stays \"Copy\" (covers the new Fix 2 behavior); (b) a full Brain Scout flow — types a phrase, submits, asserts exactly 4 `.ladder-rung` elements in Weekend/Week/Month/Moonshot order each containing the phrase, exactly 3 `.remix-card` elements with 3 distinct lenses each containing the phrase, then exercises a rung's Copy and Save buttons and verifies the scout item lands in localStorage favorites; (c) a Favorites flow that saves a prompt via seed/subject/difficulty URL params, switches to the Favorites tab, asserts the .fav-item chips equal the generator card's chips (label parity, covers Fix 1), and clicks Remove, asserting the item disappears and the empty state returns.\n\nAll fixes verified by re-running the reviewer's exact repro flows conceptually via the new/updated tests, plus `npx tsc --noEmit` (clean) and the full suite.",
+          "self_test_output": " RUN  v4.1.10 /Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-6\n\n\n Test Files  6 passed (6)\n      Tests  119 passed (119)\n   Start at  04:23:26\n   Duration  9.07s (transform 3.80s, setup 0ms, import 5.90s, tests 1.10s, environment 37.11s)",
+          "blocked_reason": ""
+        }
+      },
+      {
+        "finding_index": 4,
+        "branch": "worktree-wf_2dd4ae4c-008-6",
+        "claim": {
+          "status": "done",
+          "files_changed": [
+            "src/state/clipboard.ts",
+            "src/ui/App.tsx",
+            "src/ui/App.test.tsx",
+            "src/ui/BrainScoutView.tsx",
+            "src/ui/FavoritesView.tsx",
+            "src/ui/PromptCard.tsx"
+          ],
+          "summary": "Fixed all three findings:\n\nFix 1 (FavoritesView labels/time-band, T-019): Exported SUBJECT_LABELS/DIFFICULTY_LABELS from PromptCard.tsx (previously module-private) and imported them into FavoritesView.tsx, replacing the raw `{f.prompt.subject}`/`{f.prompt.difficulty}` enum rendering with the same display-label lookups the generator card uses. Added the missing time-band chip (`f.prompt.timeBand`) that was absent entirely. Favorites card chips for a Real Estate/Easy prompt now read \"Real Estate / Easy / 1–2 hours\", matching the generator card exactly instead of \"realEstate / easy\" (uppercased to \"REALESTATE / EASY\" by .tag-chip's text-transform) with no time band.\n\nFix 2 (false-positive copy confirmations): Added src/state/clipboard.ts with `copyToClipboard(text): Promise<boolean>` that returns whether the write actually reached the clipboard (false when navigator.clipboard is undefined, false on a rejected writeText). Replaced the guarded-but-unconditional-setCopied pattern in PromptCard.tsx, App.tsx (share-link copy), BrainScoutView.tsx, and FavoritesView.tsx with calls to this helper, only flipping to \"Copied!\"/\"Link copied!\" state when it resolves true. A missing/failing clipboard API no longer reports success.\n\nFix 3 (missing UI test coverage for Brain Scout / Favorites): Added tests to src/ui/App.test.tsx: (a) a clipboard-unavailable copy test proving the button stays \"Copy\" (covers the new Fix 2 behavior); (b) a full Brain Scout flow — types a phrase, submits, asserts exactly 4 `.ladder-rung` elements in Weekend/Week/Month/Moonshot order each containing the phrase, exactly 3 `.remix-card` elements with 3 distinct lenses each containing the phrase, then exercises a rung's Copy and Save buttons and verifies the scout item lands in localStorage favorites; (c) a Favorites flow that saves a prompt via seed/subject/difficulty URL params, switches to the Favorites tab, asserts the .fav-item chips equal the generator card's chips (label parity, covers Fix 1), and clicks Remove, asserting the item disappears and the empty state returns.\n\nAll fixes verified by re-running the reviewer's exact repro flows conceptually via the new/updated tests, plus `npx tsc --noEmit` (clean) and the full suite.",
+          "self_test_output": " RUN  v4.1.10 /Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-6\n\n\n Test Files  6 passed (6)\n      Tests  119 passed (119)\n   Start at  04:23:26\n   Duration  9.07s (transform 3.80s, setup 0ms, import 5.90s, tests 1.10s, environment 37.11s)",
+          "blocked_reason": ""
+        }
+      },
+      {
+        "finding_index": 7,
+        "branch": "worktree-wf_2dd4ae4c-008-6",
+        "claim": {
+          "status": "done",
+          "files_changed": [
+            "src/state/clipboard.ts",
+            "src/ui/App.tsx",
+            "src/ui/App.test.tsx",
+            "src/ui/BrainScoutView.tsx",
+            "src/ui/FavoritesView.tsx",
+            "src/ui/PromptCard.tsx"
+          ],
+          "summary": "Fixed all three findings:\n\nFix 1 (FavoritesView labels/time-band, T-019): Exported SUBJECT_LABELS/DIFFICULTY_LABELS from PromptCard.tsx (previously module-private) and imported them into FavoritesView.tsx, replacing the raw `{f.prompt.subject}`/`{f.prompt.difficulty}` enum rendering with the same display-label lookups the generator card uses. Added the missing time-band chip (`f.prompt.timeBand`) that was absent entirely. Favorites card chips for a Real Estate/Easy prompt now read \"Real Estate / Easy / 1–2 hours\", matching the generator card exactly instead of \"realEstate / easy\" (uppercased to \"REALESTATE / EASY\" by .tag-chip's text-transform) with no time band.\n\nFix 2 (false-positive copy confirmations): Added src/state/clipboard.ts with `copyToClipboard(text): Promise<boolean>` that returns whether the write actually reached the clipboard (false when navigator.clipboard is undefined, false on a rejected writeText). Replaced the guarded-but-unconditional-setCopied pattern in PromptCard.tsx, App.tsx (share-link copy), BrainScoutView.tsx, and FavoritesView.tsx with calls to this helper, only flipping to \"Copied!\"/\"Link copied!\" state when it resolves true. A missing/failing clipboard API no longer reports success.\n\nFix 3 (missing UI test coverage for Brain Scout / Favorites): Added tests to src/ui/App.test.tsx: (a) a clipboard-unavailable copy test proving the button stays \"Copy\" (covers the new Fix 2 behavior); (b) a full Brain Scout flow — types a phrase, submits, asserts exactly 4 `.ladder-rung` elements in Weekend/Week/Month/Moonshot order each containing the phrase, exactly 3 `.remix-card` elements with 3 distinct lenses each containing the phrase, then exercises a rung's Copy and Save buttons and verifies the scout item lands in localStorage favorites; (c) a Favorites flow that saves a prompt via seed/subject/difficulty URL params, switches to the Favorites tab, asserts the .fav-item chips equal the generator card's chips (label parity, covers Fix 1), and clicks Remove, asserting the item disappears and the empty state returns.\n\nAll fixes verified by re-running the reviewer's exact repro flows conceptually via the new/updated tests, plus `npx tsc --noEmit` (clean) and the full suite.",
+          "self_test_output": " RUN  v4.1.10 /Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-6\n\n\n Test Files  6 passed (6)\n      Tests  119 passed (119)\n   Start at  04:23:26\n   Duration  9.07s (transform 3.80s, setup 0ms, import 5.90s, tests 1.10s, environment 37.11s)",
+          "blocked_reason": ""
+        }
+      },
+      {
+        "finding_index": 2,
+        "branch": "worktree-wf_2dd4ae4c-008-7",
+        "claim": {
+          "status": "done",
+          "files_changed": [
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7/src/ui/BrainScoutView.tsx",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7/src/ui/App.tsx",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7/src/ui/App.test.tsx"
+          ],
+          "summary": "Fix 1 (BrainScoutView.tsx MH5): `saved` was a useState initializer computed once at mount. Because scout ids hash only phrase+label (seed-independent by design), a Re-scout draw swaps in new text under the same id/React key without remounting ScoutCard, so the button stayed stuck on 'Saved ✓' while the newly displayed text was never persisted (addFavorite no-op'd on the duplicate id). Fixed by: (a) recomputing `saved` via `useEffect(() => setSaved(loadFavorites().some(f => favId(f)===id && f.kind==='scout' && f.text===text)), [id, text])` so the button reflects whether the text currently on screen is actually stored; (b) in handleSave, when addFavorite returns false (duplicate id), calling removeFavorite(id) then addFavorite again so the stale stored text gets replaced with what's displayed, instead of the click being a silent no-op. favorites.ts itself was left untouched (its no-op-on-duplicate-id contract is tested and part of the store's API).\n\nFix 2 (App.tsx NH1): App never wrote seed/filters back to the URL (no pushState/replaceState anywhere), so after loading a share link and then sparking or toggling a filter, location.href stayed pinned to the old params — copying the address bar shared a stale prompt, and reload silently discarded the current prompt for the old shared one. Added a `useEffect(() => { if (seed==null) return; history.replaceState(null,'',...) }, [seed, filters])` that keeps the URL's seed/subject/difficulty in sync with what's rendered, using the existing encodeShare(). Used replaceState (not pushState) so routine spark/filter interactions don't spam browser history.\n\nSide effect fixed: App.test.tsx's beforeEach didn't reset window.location, and since jsdom's window persists across tests in a file, one test's replaceState call (from Fix 2) leaked its sparked seed/filters into the next test's initial mount, breaking the 'filter chips apply conjunctive subject + difficulty filters, empty = all' test. Added `window.history.replaceState(null, '', '/')` to beforeEach to restore test isolation — this only resets test scaffolding state, not an assertion.\n\nBoth original reproduction cases now pass (re-scout no longer shows stale 'Saved ✓' / silently drops new text; the address bar now tracks Surprise-me and filter changes). Full suite: 6 files / 116 tests, all passing.",
+          "self_test_output": "RUN  v4.1.10 /Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7\n\n Test Files  6 passed (6)\n      Tests  116 passed (116)\n   Start at  04:23:27\n   Duration  8.78s (transform 2.00s, setup 0ms, import 3.51s, tests 911ms, environment 35.09s)",
+          "blocked_reason": ""
+        }
+      },
+      {
+        "finding_index": 5,
+        "branch": "worktree-wf_2dd4ae4c-008-7",
+        "claim": {
+          "status": "done",
+          "files_changed": [
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7/src/ui/BrainScoutView.tsx",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7/src/ui/App.tsx",
+            "/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7/src/ui/App.test.tsx"
+          ],
+          "summary": "Fix 1 (BrainScoutView.tsx MH5): `saved` was a useState initializer computed once at mount. Because scout ids hash only phrase+label (seed-independent by design), a Re-scout draw swaps in new text under the same id/React key without remounting ScoutCard, so the button stayed stuck on 'Saved ✓' while the newly displayed text was never persisted (addFavorite no-op'd on the duplicate id). Fixed by: (a) recomputing `saved` via `useEffect(() => setSaved(loadFavorites().some(f => favId(f)===id && f.kind==='scout' && f.text===text)), [id, text])` so the button reflects whether the text currently on screen is actually stored; (b) in handleSave, when addFavorite returns false (duplicate id), calling removeFavorite(id) then addFavorite again so the stale stored text gets replaced with what's displayed, instead of the click being a silent no-op. favorites.ts itself was left untouched (its no-op-on-duplicate-id contract is tested and part of the store's API).\n\nFix 2 (App.tsx NH1): App never wrote seed/filters back to the URL (no pushState/replaceState anywhere), so after loading a share link and then sparking or toggling a filter, location.href stayed pinned to the old params — copying the address bar shared a stale prompt, and reload silently discarded the current prompt for the old shared one. Added a `useEffect(() => { if (seed==null) return; history.replaceState(null,'',...) }, [seed, filters])` that keeps the URL's seed/subject/difficulty in sync with what's rendered, using the existing encodeShare(). Used replaceState (not pushState) so routine spark/filter interactions don't spam browser history.\n\nSide effect fixed: App.test.tsx's beforeEach didn't reset window.location, and since jsdom's window persists across tests in a file, one test's replaceState call (from Fix 2) leaked its sparked seed/filters into the next test's initial mount, breaking the 'filter chips apply conjunctive subject + difficulty filters, empty = all' test. Added `window.history.replaceState(null, '', '/')` to beforeEach to restore test isolation — this only resets test scaffolding state, not an assertion.\n\nBoth original reproduction cases now pass (re-scout no longer shows stale 'Saved ✓' / silently drops new text; the address bar now tracks Surprise-me and filter changes). Full suite: 6 files / 116 tests, all passing.",
+          "self_test_output": "RUN  v4.1.10 /Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7\n\n Test Files  6 passed (6)\n      Tests  116 passed (116)\n   Start at  04:23:27\n   Duration  8.78s (transform 2.00s, setup 0ms, import 3.51s, tests 911ms, environment 35.09s)",
+          "blocked_reason": ""
+        }
+      }
+    ],
+    "screened_out": 0,
+    "agents_used": 7,
+    "dead_agents": [],
+    "timestamp": "2026-08-09T04:09:00-04:00"
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Review"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Verify"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 3,
+      "title": "Fix"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "reviewer-correctness",
+      "phaseIndex": 1,
+      "phaseTitle": "Review",
+      "agentId": "ab2b65bbb29c2a34e",
+      "model": "claude-opus-5[1m]",
+      "state": "done",
+      "startedAt": 1786262934473,
+      "queuedAt": 1786262930318,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "You are an adversarial reviewer in an overnight autonomous swarm.\nYour job is to FIND FAILURES, not to approve and not to suggest\nimprovements. You are checking whether the recent changes meet\ntheir written contract — not whether the code is \"good\".\n\n## What to review\nProject directory: /Users/truman/Projects/prompt-spark\nThe diff under review: run  git diff f528cd8..HEAD  (and\ngit log --oneline f…",
+      "lastProgressAt": 1786263347043,
+      "tokens": 110829,
+      "toolCalls": 23,
+      "durationMs": 412570,
+      "resultPreview": "{\"findings\":[{\"severity\":\"high\",\"file\":\"src/core/generate.ts\",\"line\":25,\"expected\":\"MH2: every prompt includes exactly one Twist sentence with clean punctuation. withTerminalPunctuation() must not append a second terminal mark to a half that already ends in one, including when the mark sits inside a closing quote (e.g. `no survivors.\\\"`).\",\"found\":\"withTerminalPunctuation tests only the LAST chara…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "reviewer-specfit",
+      "phaseIndex": 1,
+      "phaseTitle": "Review",
+      "agentId": "a1283c7e0d8d55615",
+      "model": "claude-opus-5[1m]",
+      "state": "done",
+      "startedAt": 1786262933570,
+      "queuedAt": 1786262930318,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "You are an adversarial reviewer in an overnight autonomous swarm.\nYour job is to FIND FAILURES, not to approve and not to suggest\nimprovements. You are checking whether the recent changes meet\ntheir written contract — not whether the code is \"good\".\n\n## What to review\nProject directory: /Users/truman/Projects/prompt-spark\nThe diff under review: run  git diff f528cd8..HEAD  (and\ngit log --oneline f…",
+      "lastProgressAt": 1786263511584,
+      "tokens": 122174,
+      "toolCalls": 37,
+      "durationMs": 578014,
+      "resultPreview": "{\"findings\":[{\"severity\":\"high\",\"file\":\"/Users/truman/Projects/prompt-spark/src/ui/FavoritesView.tsx\",\"line\":105,\"expected\":\"MH3: every prompt card shows difficulty + the exact time-band label. A saved prompt card should render the same display labels as the generator card (src/ui/PromptCard.tsx:73-75 -> 'Real Estate' / 'Easy' / '1–2 hours').\",\"found\":\"FavoritesView renders the raw internal enums …"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "verifier-1",
+      "phaseIndex": 2,
+      "phaseTitle": "Verify",
+      "agentId": "a48ec098d9bed9773",
+      "isolation": "worktree",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786263518477,
+      "queuedAt": 1786263513827,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "You are an adversarial verifier in an overnight autonomous swarm.\nReviewers filed the findings below against this project. Every\nreviewer finding is a CLAIM, nothing more — reviewers verify;\nthey don't get to mint evidence. Your job is to REPRODUCE each\nfinding: actually run the failing case (execute the command, run\nthe test, hit the endpoint, drive the interaction) and capture\nits real output as…",
+      "lastProgressAt": 1786263663016,
+      "tokens": 44706,
+      "toolCalls": 16,
+      "durationMs": 144538,
+      "resultPreview": "{\"results\":[{\"reproduced\":true,\"repro_output\":\"Vitest repro (src/repro.verify.test.tsx, jsdom, vitest 4.1.10) — assertions on generate() output all PASSED, i.e. the defect is present:\\n\\nseed 6 tail   : \\\"ensity with a slider from \\\\\\\"gentle nudge\\\\\\\" to \\\\\\\"no survivors.\\\\\\\".\\\"\\nseed 244 tail : \\\"element cards using their stats to pick a playful \\\\\\\"winner.\\\\\\\".\\\"\\nfinance/easy seed 0 tail: \\\" fr…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "verifier-2",
+      "phaseIndex": 2,
+      "phaseTitle": "Verify",
+      "agentId": "adcaf2dbe6fadb3cc",
+      "isolation": "worktree",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786263519395,
+      "queuedAt": 1786263513828,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "You are an adversarial verifier in an overnight autonomous swarm.\nReviewers filed the findings below against this project. Every\nreviewer finding is a CLAIM, nothing more — reviewers verify;\nthey don't get to mint evidence. Your job is to REPRODUCE each\nfinding: actually run the failing case (execute the command, run\nthe test, hit the endpoint, drive the interaction) and capture\nits real output as…",
+      "lastProgressAt": 1786263692349,
+      "tokens": 48931,
+      "toolCalls": 15,
+      "durationMs": 172954,
+      "resultPreview": "{\"results\":[{\"reproduced\":true,\"repro_output\":\"Repro (jsdom vitest in disposable worktree, exact reviewer flow: open /?seed=7&subject=realEstate&difficulty=easy -> Save -> Favorites tab -> read .fav-item .tag-chip textContent):\\n\\nGENERATOR CARD CHIPS: [\\\"Real Estate\\\",\\\"Easy\\\",\\\"1–2 hours\\\"]\\nFAVORITES CARD CHIPS: [\\\"realEstate\\\",\\\"easy\\\"]\\nFAV-ITEM COUNT: 1\\nPROMPT (seed=7): \\\"Build a calculator…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "fixer-1",
+      "phaseIndex": 3,
+      "phaseTitle": "Fix",
+      "agentId": "af9f346480d2e70e0",
+      "isolation": "worktree",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786263701492,
+      "queuedAt": 1786263696066,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "done",
+      "promptPreview": "You are a fixer in an overnight autonomous swarm. Adversarial\nreviewers filed findings against the project; an adversarial\nverifier then REPRODUCED each finding below by running its\nfailing case — the reproduction output is included. You receive\nONLY reproduced findings, never speculation: every one of these\nis a real, demonstrated defect. Fix each one.\n\nYour current working directory IS your priv…",
+      "lastProgressAt": 1786263926286,
+      "tokens": 61398,
+      "toolCalls": 41,
+      "durationMs": 224794,
+      "resultPreview": "{\"status\":\"done\",\"branch\":\"worktree-wf_2dd4ae4c-008-5\",\"files_changed\":[\"/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/core/generate.ts\",\"/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/core/generate.test.ts\",\"/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-5/src/ui/App.tsx\",\"/Users/truman/Projects/prompt-spark/.claude…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 6,
+      "label": "fixer-2",
+      "phaseIndex": 3,
+      "phaseTitle": "Fix",
+      "agentId": "ae31856f03ec84392",
+      "isolation": "worktree",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786263700539,
+      "queuedAt": 1786263696066,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "done",
+      "promptPreview": "You are a fixer in an overnight autonomous swarm. Adversarial\nreviewers filed findings against the project; an adversarial\nverifier then REPRODUCED each finding below by running its\nfailing case — the reproduction output is included. You receive\nONLY reproduced findings, never speculation: every one of these\nis a real, demonstrated defect. Fix each one.\n\nYour current working directory IS your priv…",
+      "lastProgressAt": 1786263844949,
+      "tokens": 54018,
+      "toolCalls": 27,
+      "durationMs": 144409,
+      "resultPreview": "{\"status\":\"done\",\"branch\":\"worktree-wf_2dd4ae4c-008-6\",\"files_changed\":[\"src/state/clipboard.ts\",\"src/ui/App.tsx\",\"src/ui/App.test.tsx\",\"src/ui/BrainScoutView.tsx\",\"src/ui/FavoritesView.tsx\",\"src/ui/PromptCard.tsx\"],\"summary\":\"Fixed all three findings:\\n\\nFix 1 (FavoritesView labels/time-band, T-019): Exported SUBJECT_LABELS/DIFFICULTY_LABELS from PromptCard.tsx (previously module-private) and imp…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 7,
+      "label": "fixer-3",
+      "phaseIndex": 3,
+      "phaseTitle": "Fix",
+      "agentId": "a5c2c5e1ef002ba63",
+      "isolation": "worktree",
+      "model": "claude-sonnet-5",
+      "state": "done",
+      "startedAt": 1786263701130,
+      "queuedAt": 1786263696066,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "done",
+      "promptPreview": "You are a fixer in an overnight autonomous swarm. Adversarial\nreviewers filed findings against the project; an adversarial\nverifier then REPRODUCED each finding below by running its\nfailing case — the reproduction output is included. You receive\nONLY reproduced findings, never speculation: every one of these\nis a real, demonstrated defect. Fix each one.\n\nYour current working directory IS your priv…",
+      "lastProgressAt": 1786263842024,
+      "tokens": 57674,
+      "toolCalls": 21,
+      "durationMs": 140894,
+      "resultPreview": "{\"status\":\"done\",\"branch\":\"worktree-wf_2dd4ae4c-008-7\",\"files_changed\":[\"/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7/src/ui/BrainScoutView.tsx\",\"/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7/src/ui/App.tsx\",\"/Users/truman/Projects/prompt-spark/.claude/worktrees/wf_2dd4ae4c-008-7/src/ui/App.test.tsx\"],\"summary\":\"Fix 1 (BrainScoutView.tsx MH5): `…"
+    }
+  ],
+  "totalTokens": 499730,
+  "totalToolCalls": 180
+}
