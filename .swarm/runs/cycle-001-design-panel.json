@@ -1,0 +1,583 @@
+{
+  "summary": "Three competing design briefs + a judge",
+  "agentCount": 4,
+  "logs": [
+    "design-panel @ 2026-08-09T02:42:00-04:00 (modelPolicy: value-routing; design + judge pinned to fable/high)",
+    "judge picked B with 5 steal(s)"
+  ],
+  "result": {
+    "candidates": [
+      {
+        "brief": "MINIMAL",
+        "name": "Prompt Spark",
+        "summary": "A single-page React+Vite toy-tool: one big Surprise-me button drives a pure, seed-deterministic prompt generator over four curated subject packs (Real Estate, Law, Finance, Science; 10 templates each with randomized fill-in variables), with subject+difficulty filtering, fixed difficulty→time-band tags, one-tap copy, a localStorage favorites list, and a Brain Scout view that expands a typed seed idea into a 4-rung scope ladder (Weekend→Week→Month→Moonshot, seed phrase verbatim in every rung) plus exactly 3 subject-lens remixes — everything client-side, every must-have covered, and every piece of the plan traceable to one.",
+        "architecture": "Three strict layers, each a seam that parallel agents can build against without touching each other's files.\n\nLAYER 1 — Frozen contract (src/lib/core.js, lands first, then never changes): the seeded PRNG (mulberry32), djb2 string hash, promptId(seed, templateId), the fixed DIFFICULTY_TO_TIME map (easy=\"1–2 hours\", medium=\"an evening or two (3–6 hours)\", hard=\"a weekend+ (10+ hours)\"), the LADDER_RUNGS constant [\"Weekend\",\"Week\",\"Month\",\"Moonshot\"] in order (the ordering rule lives in the data shape, so downstream code cannot get it wrong), the TEMPLATE entry shape ({id, subject, difficulty, text-with-{slots}, vars: {slot: [options]}}), the generated-prompt shape ({id, text, subject, difficulty, timeBand, seed, templateId}), and the frozen CSS class vocabulary for dynamically rendered regions (prompt-card, ladder-rung, remix-card, fav-item) so UI and styles agents never collide.\n\nLAYER 2 — Pure logic + data, no DOM: src/data/packs.js exports the four packs conforming to the TEMPLATE shape plus each subject's lens list (used by Brain Scout remixes). src/lib/generate.js is generate(seed, filters) — pure function of its arguments: filter templates conjunctively (subject AND difficulty; empty = all), pick template and fill each variable slot by consuming the PRNG in fixed slot order, return the prompt shape; same seed + same filters is string-equal identical. src/lib/brainScout.js is expand(seedPhrase, seed) — deterministic ladder of exactly 4 rungs (each rung's text interpolates the user's seed phrase verbatim, no casing or truncation) and exactly 3 remixes with distinct subject lenses drawn from packs. src/lib/favorites.js wraps localStorage key prompt-spark:favorites:v1: add is a no-op on duplicate id, remove deletes exactly one entry, load survives reload; Brain Scout items get ids via the same hash (hash of 'scout:'+seedPhrase+rung/lens label) so they save through the identical path.\n\nLAYER 3 — Thin React UI, no logic: App.jsx holds state (current seed, filters, active view) and switches between three sections via state — no router. Generator view = hero Surprise-me button + Filters + PromptCard (difficulty/time chips, Copy via navigator.clipboard, Save). BrainScout view = text input + ladder + remix cards, each copyable/saveable. Favorites view = list + per-item remove. One mobile-first stylesheet (styles.css) with a single committed palette; flat color, no gradients; the hero button is the largest element on screen at 375px.\n\nTests (vitest, jsdom for the favorites suite) pin the domain rules directly: seed determinism by string equality, filter conformance under every subject×difficulty combination, the fixed difficulty→time mapping, rung count/order/verbatim-seed, remix count and lens distinctness, favorites dedupe/remove-one/key. Dependencies: react, react-dom, vite, vitest, jsdom — nothing else. No backend, no network calls, no template editor. Nice-to-have features (share URLs, confetti, streaks, Markdown export, dark mode) are out of this build; the deliverable is the five must-haves working in a real browser at 375px and 1280px with a green test suite and clean build.",
+        "file_plan": [
+          {
+            "path": "/Users/truman/Projects/prompt-spark/package.json",
+            "purpose": "Scripts (dev on port 5199 strictPort via spec command, build, test=vitest) and the five dependencies: react, react-dom, vite, @vitejs/plugin-react, vitest (+jsdom for favorites tests)"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/vite.config.js",
+            "purpose": "Vite + React plugin config and vitest test config (jsdom environment for the favorites suite)"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/index.html",
+            "purpose": "SPA entry: viewport meta for mobile, mounts src/main.jsx"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/main.jsx",
+            "purpose": "React root mount of App"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/lib/core.js",
+            "purpose": "FROZEN CONTRACT (wave 1, never edited after): mulberry32 PRNG, djb2 hash, promptId(seed,templateId), DIFFICULTY_TO_TIME map, LADDER_RUNGS ordered constant, TEMPLATE and PROMPT shape docs, frozen CSS class vocabulary for dynamic regions"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/data/packs.js",
+            "purpose": "Curated content: 4 subject packs x >=10 templates each conforming to the TEMPLATE shape (id, subject, difficulty, text with {slots}, per-slot option pools) plus each subject's lens list for Brain Scout remixes"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/lib/generate.js",
+            "purpose": "generate(seed, filters): pure deterministic generator — conjunctive filtering, PRNG-ordered template pick and slot fill, returns PROMPT shape with difficulty/timeBand from template metadata"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/lib/brainScout.js",
+            "purpose": "expand(seedPhrase, seed): deterministic 4-rung scope ladder (seed phrase verbatim in each rung, LADDER_RUNGS order) + exactly 3 remixes with distinct subject lenses from packs"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/lib/favorites.js",
+            "purpose": "localStorage store at prompt-spark:favorites:v1 — load/add/remove; add dedupes by prompt id (no-op on duplicate), remove deletes exactly one"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/App.jsx",
+            "purpose": "Top-level state (seed, filters, active view) and view switching between Generator, Brain Scout, Favorites; owns the Surprise-me random-seed tap"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/components/Filters.jsx",
+            "purpose": "Subject + difficulty filter controls (conjunctive; empty = all) feeding generate()"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/components/PromptCard.jsx",
+            "purpose": "Renders a generated prompt with difficulty/time chips, Copy-to-clipboard button, Save-to-favorites button (frozen class names)"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/components/BrainScout.jsx",
+            "purpose": "Seed-idea input, renders ladder rungs and remix cards, each with copy and save actions"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/components/Favorites.jsx",
+            "purpose": "Favorites list view: render saved items, per-item remove, empty state"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/src/styles.css",
+            "purpose": "Single mobile-first stylesheet: committed flat palette, hero Surprise-me button, card/chip styles, responsive at 375px and 1280px with no horizontal scroll"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/tests/generate.test.js",
+            "purpose": "Pins determinism (same seed+filters => string-equal prompt), filter conformance for all subject x difficulty combos, fixed difficulty->time mapping, and that all 4 packs have >=10 templates"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/tests/brainScout.test.js",
+            "purpose": "Pins exactly 4 rungs in Weekend/Week/Month/Moonshot order, seed phrase verbatim in every rung, exactly 3 remixes with distinct lenses"
+          },
+          {
+            "path": "/Users/truman/Projects/prompt-spark/tests/favorites.test.js",
+            "purpose": "Pins dedupe no-op on double add, remove deletes exactly one, persistence under key prompt-spark:favorites:v1 (jsdom localStorage)"
+          }
+        ],
+        "build_order": [
+          "Wave 1 (one agent, blocks everything): scaffold — package.json, vite.config.js, index.html, src/main.jsx — plus src/lib/core.js, the frozen contract (PRNG, hash, DIFFICULTY_TO_TIME, LADDER_RUNGS, TEMPLATE/PROMPT shapes, dynamic-region class vocabulary). Contract is reviewed and frozen before wave 2 starts.",
+          "Wave 2 (four agents in parallel, non-overlapping scopes, all coding against core.js only): Agent A: src/data/packs.js (all 40+ templates + lens lists). Agent B: src/lib/generate.js + src/lib/brainScout.js + tests/generate.test.js + tests/brainScout.test.js (developed against small inline fixture data conforming to the TEMPLATE shape, then pointed at packs.js). Agent C: src/lib/favorites.js + tests/favorites.test.js. Agent D: src/App.jsx, src/components/*, src/styles.css (renders against the frozen PROMPT shape and lib function signatures).",
+          "Wave 3 (one integrating agent): wire packs.js into generate/brainScout tests, run npx vitest run to green, npm run build, then real-browser pass on npm run dev -- --port 5199 --strictPort: exercise all five must-haves by hand, verify 375px and 1280px with no horizontal scroll and zero console errors on the happy path."
+        ],
+        "risks": [
+          "Determinism is the hardest contract: one stray Math.random(), Date.now(), or object-key iteration in generate() breaks the string-equality rule. Mitigation is structural (all randomness flows from the wave-1 PRNG, slots filled in declared array order, template arrays are literal and ordered) but the wave-3 integrator must diff two runs of the same seed as a smoke check.",
+          "Shape drift across the wave-2 seam: the data agent (packs.js) and the logic agent (generate.js) build concurrently against the TEMPLATE shape frozen in core.js. If either improvises a field (e.g. nested variable pools), integration breaks at wave 3. The shape doc in core.js must include one complete worked example template, and the generate tests must assert pack conformance, not just fixture conformance.",
+          "Content quality is real work, not filler: 40+ templates with variable pools that produce inspiring, well-scoped, grammatical prompts under random substitution is the single biggest time sink. A template that reads as mad-libs slop fails the product even with green tests. The data agent should test-render every template with several seeds before handoff.",
+          "Brain Scout verbatim rule is easy to violate accidentally: any rung template that capitalizes, pluralizes, or truncates the user's seed phrase fails 'contains the seed phrase verbatim'. Rung templates must interpolate the raw string untouched; the test must use a mixed-case multi-word seed to catch casing bugs.",
+          "Spec ambiguity — favorite ids for Brain Scout items: the dedupe rule defines id = hash(seed+templateId), which Brain Scout results don't have. This design resolves it as hash('scout:'+seedPhrase+rung-or-lens-label) so saving reuses the same favorites path; the integrator must confirm double-saving a ladder rung is a no-op just like a generated prompt.",
+          "Clipboard and localStorage environment gaps: navigator.clipboard needs a fallback (execCommand or textarea select) on non-secure contexts, and the favorites test suite silently fails without the jsdom environment configured in vite.config.js — both are small but classic overnight integration stalls."
+        ],
+        "delight": [
+          "The one-tap spark: on a phone, thumb hits the big Surprise-me button and a complete, well-scoped project prompt — with its difficulty chip and honest time estimate — appears instantly. No spinner, no network, no second tap.",
+          "Brain Scout's ladder moment: you type five words of a half-idea and immediately see your own phrase echoed inside a Weekend build, a Week project, a Month project, and a Moonshot — your idea, made bigger four ways, in the time it took to type it.",
+          "The remix flip: the same seed idea viewed through three different subject lenses (a Finance angle, a Law angle, a Science angle) reliably produces one take you hadn't considered.",
+          "Copy is never more than one tap away — every prompt, every rung, every remix has its own copy button, so the grab-and-go loop (spark, copy, paste into tonight's project) takes seconds.",
+          "Filters that keep promises: lock to Science + easy and every single generation is a Science prompt you can finish in 1–2 hours — the tool never wastes a tap on something out of scope."
+        ]
+      },
+      {
+        "brief": "AMBITIOUS",
+        "name": "Spark Machine — prompt-spark with a slot-machine soul",
+        "summary": "A pure-function prompt engine wrapped in a toy: one giant Surprise-me button that slot-reveals a fully-formed project prompt, four richly-authored subject packs, a Brain Scout that turns any seed phrase into a 4-rung scope ladder plus 3 lens remixes, and a delighter layer (shareable links, confetti + sparked-today streak, dark mode, Markdown export, cross-feature \"Remix in Brain Scout\") that lands only after every must-have is green. Everything user-visible traces to a spec must-have or a named file below; every delighter reuses the frozen core rather than adding new machinery.",
+        "architecture": "Three strict layers with a contracts-first freeze (per playbook L-001/L-005).\n\nLAYER 1 — Pure core (src/core/). No DOM, no React, no Math.random. `rng.ts` implements mulberry32 seeded PRNG. `generate.ts` exposes generate(seed, filters) -> GeneratedPrompt: it filters the template pool conjunctively (subject AND difficulty; empty = all), picks template + variable fills + twist deterministically from the seed stream, and computes promptId = hash(seed + templateId). Difficulty and its fixed time-band string live ONLY in template metadata, so difficulty can never drift from the template (L-005: the rule is in the ENTRY shape). `brainScout.ts` builds the ladder from a RUNGS tuple constant typed as exactly ['Weekend','Week','Month','Moonshot'] — ordering is unrepresentable-wrong — and every rung template interpolates the user's seed phrase verbatim; remixes deterministically draw 3 distinct subject lenses from the pack registry. `share.ts` encodes {seed, filters} or {scoutSeed} into URL params; because generate is pure, a share link IS the prompt — no prompt text ever serialized. `markdown.ts` renders favorites to a Markdown string.\n\nLAYER 2 — Data (src/data/). `schema.ts` defines the PackEntry shape (template string with {variable} slots, variable option lists, difficulty, lens name, twist pool) plus validatePack(); four pack files (>=10 entries each, aiming 12) are pure data an agent can author without touching logic. A vitest suite validates every pack structurally, so pack authoring can't break the engine.\n\nLAYER 3 — State + UI (src/state/, src/ui/). `favorites.ts` and `stats.ts` are tiny localStorage stores (keys prompt-spark:favorites:v1 / :stats:v1) with dedupe-by-promptId (double-add is a no-op, remove deletes exactly one). React components consume core via props/hooks only. App.tsx is a 3-tab mobile-first shell: Spark / Brain Scout / Favorites.\n\nFREEZE (wave 1): types.ts + schema.ts + a CLASSNAMES render-vocabulary constant in tokens.css/types (class names for every dynamically-built region: .prompt-card, .ladder-rung, .remix-card, .fav-row, tags) are written first by one agent and never edited after — the four wave-2 agents build against them in isolation. Delighters (confetti, streak, share UI, slot reveal, dark mode, export) are strictly wave-3 wiring on top of the already-working core: each one is a consumer of generate/share/stats, never a modification of them.",
+        "file_plan": [
+          {
+            "path": "package.json",
+            "purpose": "Scaffold: React+Vite+vitest, scripts (dev on 5199 strictPort, test, build) — wave 1 only, frozen after"
+          },
+          {
+            "path": "vite.config.ts",
+            "purpose": "Vite + vitest config (jsdom for state tests) — wave 1, frozen"
+          },
+          {
+            "path": "index.html",
+            "purpose": "SPA entry with viewport meta, app mount, title — wave 1, frozen"
+          },
+          {
+            "path": "src/core/types.ts",
+            "purpose": "FROZEN contracts: Template, GeneratedPrompt, Filters, LadderRung tuple type, Remix, DIFFICULTY_TIME_BANDS map, CLASSNAMES render vocabulary"
+          },
+          {
+            "path": "src/core/rng.ts",
+            "purpose": "mulberry32 seeded PRNG + seed string parse/format; sole randomness source"
+          },
+          {
+            "path": "src/core/generate.ts",
+            "purpose": "Pure generate(seed, filters) -> GeneratedPrompt with conjunctive filtering, deterministic variable/twist fill, promptId hash"
+          },
+          {
+            "path": "src/core/brainScout.ts",
+            "purpose": "expandSeed(seedPhrase, rngSeed, lenses) -> 4-rung ladder (order-typed tuple, seed phrase verbatim per rung) + exactly 3 distinct-lens remixes"
+          },
+          {
+            "path": "src/core/share.ts",
+            "purpose": "URL-param encode/decode of {seed, filters} and Brain Scout seed; delighter, but pure and testable"
+          },
+          {
+            "path": "src/core/markdown.ts",
+            "purpose": "Favorites list -> Markdown export string (delighter)"
+          },
+          {
+            "path": "src/data/schema.ts",
+            "purpose": "FROZEN PackEntry data shape (difficulty + lens + twists embedded per entry) and validatePack()"
+          },
+          {
+            "path": "src/data/realEstate.ts",
+            "purpose": "Real Estate pack: 12 templates with variable pools, difficulties, lens"
+          },
+          {
+            "path": "src/data/law.ts",
+            "purpose": "Law pack: 12 templates, same shape"
+          },
+          {
+            "path": "src/data/finance.ts",
+            "purpose": "Finance pack: 12 templates, same shape"
+          },
+          {
+            "path": "src/data/science.ts",
+            "purpose": "Science pack: 12 templates, same shape"
+          },
+          {
+            "path": "src/data/index.ts",
+            "purpose": "Pack registry + subject lens catalog consumed by generate and brainScout"
+          },
+          {
+            "path": "src/state/favorites.ts",
+            "purpose": "localStorage store prompt-spark:favorites:v1 — add (dedupe by promptId), remove-exactly-one, list, subscribe"
+          },
+          {
+            "path": "src/state/stats.ts",
+            "purpose": "localStorage store prompt-spark:stats:v1 — sparked-today count + day streak (delighter data)"
+          },
+          {
+            "path": "src/ui/App.tsx",
+            "purpose": "3-tab mobile-first shell (Spark / Brain Scout / Favorites), filter state owner, URL-param bootstrap"
+          },
+          {
+            "path": "src/ui/SurpriseHero.tsx",
+            "purpose": "The hero: giant Surprise-me button; triggers generate with random seed; hosts slot-reveal animation (wave 3)"
+          },
+          {
+            "path": "src/ui/PromptCard.tsx",
+            "purpose": "Generated prompt display: difficulty/time-band tags, copy, save-to-favorites, share-link and Remix-in-Brain-Scout buttons (wave 3)"
+          },
+          {
+            "path": "src/ui/FilterBar.tsx",
+            "purpose": "Subject + difficulty chip filters (conjunctive), clear-all"
+          },
+          {
+            "path": "src/ui/BrainScoutView.tsx",
+            "purpose": "Seed input, 4-rung ladder render, 3 remix cards, per-item copy/save"
+          },
+          {
+            "path": "src/ui/FavoritesView.tsx",
+            "purpose": "Favorites list: view/remove/copy, Export-as-Markdown button (wave 3)"
+          },
+          {
+            "path": "src/ui/ConfettiBurst.tsx",
+            "purpose": "Self-contained CSS-transform confetti, ~600ms, pointer-events none (delighter)"
+          },
+          {
+            "path": "src/ui/StatsBadge.tsx",
+            "purpose": "'N prompts sparked today' + streak chip in header (delighter)"
+          },
+          {
+            "path": "src/styles/tokens.css",
+            "purpose": "FROZEN palette (electric coral/ink/cream confident scheme), spacing, type scale, dark-mode custom-property flips via prefers-color-scheme"
+          },
+          {
+            "path": "src/styles/app.css",
+            "purpose": "Layout + component styles using CLASSNAMES vocabulary; 375px-first with 1280px breakpoint; slot-reveal + micro-animation keyframes"
+          },
+          {
+            "path": "src/core/generate.test.ts",
+            "purpose": "Seed determinism (string-equal on repeat), conjunctive filter compliance, promptId dedupe hash, twist inclusion"
+          },
+          {
+            "path": "src/core/brainScout.test.ts",
+            "purpose": "Exactly 4 rungs in fixed order, seed phrase verbatim in every rung, exactly 3 distinct-lens remixes, determinism"
+          },
+          {
+            "path": "src/data/packs.test.ts",
+            "purpose": "Structural validation: >=10 entries per pack, valid difficulty, non-empty variable pools, lens present"
+          },
+          {
+            "path": "src/state/favorites.test.ts",
+            "purpose": "Dedupe no-op on double add, remove-exactly-one, v1 key persistence round-trip"
+          },
+          {
+            "path": "src/core/share.test.ts",
+            "purpose": "Encode/decode round-trip reproduces string-equal prompt; special chars in scout seed survive"
+          }
+        ],
+        "build_order": [
+          "Wave 1 — CONTRACT FREEZE (1 agent, ~30 min, blocks everything): package.json, vite.config.ts, index.html, src/core/types.ts, src/data/schema.ts, src/styles/tokens.css. Compiles, dev server boots, contracts and class vocabulary frozen. No later wave edits these files.",
+          "Wave 2 — MUST-HAVES in 4 parallel non-overlapping scopes: Agent A (engine): rng.ts, generate.ts, brainScout.ts, share.ts, markdown.ts + generate/brainScout/share tests. Agent B (data): realEstate/law/finance/science.ts, data/index.ts + packs.test.ts. Agent C (UI shell): App.tsx, SurpriseHero.tsx, PromptCard.tsx, FilterBar.tsx, app.css. Agent D (state + secondary views): favorites.ts, stats.ts, BrainScoutView.tsx, FavoritesView.tsx + favorites.test.ts.",
+          "Wave 2.5 — INTEGRATION CHECKPOINT (1 agent): merge worktrees, npm test green, all five must-haves clicked through in a real browser at 375px and 1280px. Delighters do not start until this passes.",
+          "Wave 3 — DELIGHTERS in 3 parallel scopes on top of the safe core: Agent A: share-link button on PromptCard + URL bootstrap in App + Remix-in-Brain-Scout bridge. Agent B: ConfettiBurst.tsx + StatsBadge.tsx + stats wiring on generate. Agent C: slot-reveal animation in SurpriseHero, Markdown export button in FavoritesView, dark-mode polish pass in app.css.",
+          "Wave 4 — SHIP GATE (1 agent): full npm test + npm run build, happy-path console-error sweep, no-horizontal-scroll check at both widths, kill-switch: any delighter causing a console error or test failure gets reverted rather than debugged past 30 min."
+        ],
+        "risks": [
+          "String-equal determinism is the strictest contract in the spec: one stray Math.random() or an unstable iteration order in variable fill breaks generate(seed, filters) reproducibility AND share links simultaneously. Mitigation: rng.ts is the only randomness source, generate.test.ts asserts string equality across repeated calls, and share.test.ts round-trips through the encoder.",
+          "Brain Scout's 'seed phrase verbatim in every rung' rule fails silently if rung templates paraphrase or truncate the seed. Mitigation: rung templates take the raw phrase as an interpolation slot, and brainScout.test.ts greps each rung for the exact substring including punctuation-heavy seeds.",
+          "Pack authoring is the largest single work item (48 templates with variable pools) and the easiest to half-do at 3am. Mitigation: it's a dedicated whole-agent scope with a structural test (>=10 per pack) that fails the build if any pack is thin; quality of prose is the residual risk the ship gate spot-checks.",
+          "Wave-2 agents integrating four worktrees: PromptCard (Agent C) renders GeneratedPrompt (Agent A) and calls favorites (Agent D). If any agent invents fields beyond frozen types.ts, the 2.5 merge stalls. Mitigation: types.ts freeze is absolute; the checkpoint agent has authority to conform code to the contract, not renegotiate it.",
+          "Delighter creep is the classic overnight failure: confetti libraries, router deps, or animation debugging eating the ship gate. Mitigation: zero new dependencies after wave 1 (confetti is hand-rolled CSS, sharing is URLSearchParams, no router — tabs are state), delighters gated behind the wave-2.5 checkpoint, and wave 4 carries an explicit revert-over-debug rule.",
+          "Clipboard API rejects on some non-HTTPS/localhost combos and would violate 'no console errors on happy path'. Mitigation: copy helper catches rejection and falls back to a textarea select+execCommand path with a visible 'copied!' state either way.",
+          "Favorites 'remove exactly one' is easy to get wrong with dedupe-by-id (dedupe means duplicates shouldn't exist, but defensive removal must still splice one index, not filter all). Mitigation: encoded directly in favorites.test.ts."
+        ],
+        "delight": [
+          "The slot-machine reveal: hitting the big Surprise-me button spins the prompt's variable slots into place over ~400ms before locking the final text — the generate call is instant and the animation never blocks copy, so it feels like a toy and works like a tool.",
+          "A micro confetti burst plus a 'prompts sparked today' streak chip on every generate — cheap dopamine that makes the fifth spin as fun as the first, hand-rolled so it can never block interaction.",
+          "Share links that ARE the prompt: because generation is a pure function of seed+filters, the URL you text a friend reproduces their prompt character-for-character — the show-your-friends moment the whole design is built around.",
+          "Remix in Brain Scout: one tap on any generated prompt pipes its topic into Brain Scout as a seed, turning a random spark into a 4-rung scope ladder — the two headline features compose instead of sitting in separate tabs.",
+          "Brain Scout's ladder renders as an actual climbable ladder on mobile — Weekend at the bottom, Moonshot at top, each rung one thumb-tap to copy — built for the on-the-go ideation the spec calls out.",
+          "Export favorites as Markdown: your saved sparks drop into your notes app as a ready-made project backlog with difficulty and time-band per entry.",
+          "A confident electric-coral-on-ink palette with system dark mode — one committed color story, no gradient soup, identical personality in both themes."
+        ]
+      },
+      {
+        "brief": "TASTE-FORWARD",
+        "name": "Spark Booth — a carnival ticket booth for project prompts",
+        "summary": "prompt-spark rendered as a carnival ticket booth: you smack a big arcade coin-button and a project prompt \"prints\" out as a perforated paper ticket — subject color stripe, rubber-stamped difficulty + time band, and the generation seed printed as the ticket's serial number. Brain Scout is the booth's back room: type a seed idea and watch a 4-rung ladder (Weekend → Week → Month → Moonshot) build itself as an ascending staircase, plus 3 remix cards each stamped with a distinct subject lens. Favorites are torn ticket stubs pinned in a Stub Book. One committed palette — warm paper, ink navy, spark orange, four subject hues — no gradients. Every must-have (4 subject packs of 10+ variable-filled templates, seedable pure-function randomizer, difficulty/time tags with conjunctive subject+difficulty filtering, copy + localStorage favorites, Brain Scout ladder + remixes) lands inside this one visual metaphor, and the seed-as-serial-number turns the deterministic-generation domain rule into a visible, shareable feature.",
+        "architecture": "React + Vite SPA, strictly client-side, split into three layers with frozen contracts between them so parallel builders never collide.\n\nLAYER 1 — Pure engine (no React, no DOM). src/engine/rng.ts implements mulberry32 seeded PRNG plus seed<->serial encoding (\"№ A4F2-9C\" style, the visible ticket number). src/engine/generate.ts is generate(seed, filters) -> GeneratedPrompt: it filters the template pool conjunctively (subject AND difficulty; empty = all), then makes a FIXED, documented sequence of PRNG draws (template pick, then each variable slot in declaration order, then twist) so string-equality determinism survives refactors. Difficulty and its fixed time band come only from template metadata (easy=\"1–2 hours\", medium=\"an evening or two (3–6 hours)\", hard=\"a weekend+ (10+ hours)\") — the engine exposes DIFFICULTY_BANDS as a const map so no UI code retypes the strings. GeneratedPrompt carries id = hash(seed + templateId), computed here and nowhere else, so favorites-dedupe and URL-share use one hash. src/engine/scout.ts is expandSeed(seedPhrase, rngSeed) -> ScoutResult whose type is a fixed 4-tuple [WeekendRung, WeekRung, MonthRung, MoonshotRung] — rung order is encoded in the data shape, not in render logic — and each rung template interpolates the user's seed phrase verbatim; remixes are exactly 3, drawn from distinct subject lenses defined in the data layer.\n\nLAYER 2 — Data. src/data/{realEstate,law,finance,science}.ts each export 10+ Template entries: text with {variable} slots, per-variable option pools, difficulty in metadata, and a lens object (the subject's \"angle\" used by Brain Scout remixes). src/data/index.ts aggregates; a pack-validation test enforces >=10 per subject and every subject x difficulty combo non-empty (so conjunctive filtering can never hit an empty pool).\n\nLAYER 3 — Shell + look. src/styles/tokens.css is the design contract frozen in wave 1: palette (paper #FFF9EF, ink #1B1B2F, spark orange #FF5A2D, subject hues terracotta/navy/green/violet), type scale (bundled Bricolage Grotesque via @fontsource — built into the bundle, zero runtime fetches), motion vars (all animations <=300ms, CSS-only, interruptible), and the render-vocabulary class names for every dynamically built DOM region (.ticket, .ticket__stripe, .ticket__stamp, .rung, .remix-card, .stub) so component and page builders share one vocabulary. Dark mode is a designed variant (ink paper, glowing stamp colors) via prefers-color-scheme on the same tokens. State: src/state/favorites.ts wraps localStorage key prompt-spark:favorites:v1 with dedupe-by-id add, remove-exactly-one, and reload survival; src/state/stats.ts holds \"prompts sparked today\". src/lib/share.ts encodes seed+filters into URL params and replays them through generate() on load; src/lib/confetti.ts is a ~60-line canvas paper-scrap burst (no dependency). Two routes in one shell (App.tsx tab bar, booth-marquee header): SparkPage (hero SparkButton -> Ticket + FilterChips + StubBook) and ScoutPage (seed input -> ScoutLadder + RemixCards). Mobile-first: single column at 375px with the coin button thumb-reachable; 1280px gets booth-counter framing, no horizontal scroll at either width.\n\nTesting: vitest on engine (explicit seeds, string-equality repeats, filter conjunction, scout rung order + verbatim seed phrase), favorites (dedupe, single-removal, persistence via mocked localStorage), and pack validation. Definition-of-done browser pass drives all five must-haves at both widths with a console-error sweep.",
+        "file_plan": [
+          {
+            "path": "package.json",
+            "purpose": "Scaffold: Vite + React + vitest + @fontsource/bricolage-grotesque; scripts dev/build/test matching spec commands (wave-1 owner only)"
+          },
+          {
+            "path": "index.html",
+            "purpose": "App entry HTML with theme-color meta and viewport setup; no external resources"
+          },
+          {
+            "path": "vite.config.ts",
+            "purpose": "Vite + React plugin config; vitest config block (jsdom for state tests, node for engine)"
+          },
+          {
+            "path": "src/engine/types.ts",
+            "purpose": "FROZEN wave-1 contract: Template, VariableSlot, Difficulty, DIFFICULTY_BANDS const map, Filters, GeneratedPrompt (with id), ScoutResult as fixed 4-tuple of rungs + exactly-3 remixes type"
+          },
+          {
+            "path": "src/engine/rng.ts",
+            "purpose": "mulberry32 seeded PRNG, seed generation, and seed<->serial-number encode/decode used by tickets and share URLs"
+          },
+          {
+            "path": "src/engine/generate.ts",
+            "purpose": "Pure generate(seed, filters): conjunctive filter of pool, fixed draw order (template -> variables in declaration order -> twist), prompt id = hash(seed+templateId); string-equal deterministic"
+          },
+          {
+            "path": "src/engine/scout.ts",
+            "purpose": "Brain Scout expansion: seed phrase -> ordered Weekend/Week/Month/Moonshot rungs (seed phrase verbatim in each) + 3 remixes with distinct subject lenses"
+          },
+          {
+            "path": "src/engine/engine.test.ts",
+            "purpose": "Vitest: same-seed string equality, distinct-seed variety, filter conjunction (only matching templates ever emitted), band mapping, serial roundtrip, scout rung order/count and verbatim-seed rule"
+          },
+          {
+            "path": "src/data/realEstate.ts",
+            "purpose": "10+ real-estate templates with variable pools, per-template difficulty, twist list, and the Real Estate lens definition"
+          },
+          {
+            "path": "src/data/law.ts",
+            "purpose": "10+ law templates, same entry shape, Law lens"
+          },
+          {
+            "path": "src/data/finance.ts",
+            "purpose": "10+ finance templates, same entry shape, Finance lens"
+          },
+          {
+            "path": "src/data/science.ts",
+            "purpose": "10+ science templates, same entry shape, Science lens"
+          },
+          {
+            "path": "src/data/index.ts",
+            "purpose": "Pack aggregation + subject registry (id, label, hue token) consumed by engine and UI"
+          },
+          {
+            "path": "src/data/packs.test.ts",
+            "purpose": "Pack validation: >=10 per subject, every subject x difficulty combo non-empty, all variable slots have non-empty pools"
+          },
+          {
+            "path": "src/styles/tokens.css",
+            "purpose": "FROZEN wave-1 design contract: palette, type scale, spacing, motion vars, dark-mode variant, and documented render-vocabulary classes (.ticket, .rung, .remix-card, .stub, .stamp)"
+          },
+          {
+            "path": "src/styles/app.css",
+            "purpose": "Layout + component styling built on tokens: booth marquee header, ticket perforation/stamp treatments, ladder staircase, responsive rules for 375px and 1280px"
+          },
+          {
+            "path": "src/components/SparkButton.tsx",
+            "purpose": "Hero arcade coin-button: press-depress animation, fires onSpark; never disabled/blocked by animation"
+          },
+          {
+            "path": "src/components/Ticket.tsx",
+            "purpose": "Renders a GeneratedPrompt as a ticket: subject color stripe, prompt text, rotated difficulty stamp with time band, serial number, copy + favorite actions"
+          },
+          {
+            "path": "src/components/FilterChips.tsx",
+            "purpose": "Subject + difficulty chip rows (conjunctive selection, empty = all), styled as booth punch-cards"
+          },
+          {
+            "path": "src/components/StubBook.tsx",
+            "purpose": "Favorites panel: torn ticket stubs list with remove and copy, Markdown export button, empty-state art"
+          },
+          {
+            "path": "src/components/ScoutLadder.tsx",
+            "purpose": "Renders the 4-rung ScoutResult tuple as an ascending staircase with seed phrase highlighted; per-rung copy/save"
+          },
+          {
+            "path": "src/components/RemixCards.tsx",
+            "purpose": "The 3 lens-stamped remix cards with copy/save actions"
+          },
+          {
+            "path": "src/state/favorites.ts",
+            "purpose": "localStorage store at prompt-spark:favorites:v1: add (dedupe by prompt id, no-op on repeat), remove exactly one, list; React hook wrapper"
+          },
+          {
+            "path": "src/state/favorites.test.ts",
+            "purpose": "Vitest: dedupe no-op, single removal, persistence across simulated reload, key name pinned"
+          },
+          {
+            "path": "src/state/stats.ts",
+            "purpose": "Prompts-sparked-today counter with day rollover, localStorage-backed"
+          },
+          {
+            "path": "src/lib/clipboard.ts",
+            "purpose": "Copy helper with fallback + 'Punched!' toast trigger shared by ticket, rungs, remixes"
+          },
+          {
+            "path": "src/lib/share.ts",
+            "purpose": "Encode/decode seed+filters (and scout seed phrase) into URL params; replay through generate() on load for shareable prompts"
+          },
+          {
+            "path": "src/lib/confetti.ts",
+            "purpose": "Dependency-free canvas paper-scrap burst, fire-and-forget, respects prefers-reduced-motion"
+          },
+          {
+            "path": "src/pages/SparkPage.tsx",
+            "purpose": "Main booth screen wiring SparkButton -> generate() -> Ticket, FilterChips, StubBook, stats counter, confetti, share-URL hydration"
+          },
+          {
+            "path": "src/pages/ScoutPage.tsx",
+            "purpose": "Brain Scout screen: seed input -> expandSeed -> ScoutLadder + RemixCards, save-to-stubs wiring"
+          },
+          {
+            "path": "src/App.tsx",
+            "purpose": "Shell: booth marquee header, two-tab nav (Spark / Brain Scout), route state, dark-mode class hookup"
+          },
+          {
+            "path": "src/main.tsx",
+            "purpose": "React mount + font/style imports"
+          }
+        ],
+        "build_order": [
+          "Wave 1 (single agent, contracts first): package.json, vite.config.ts, index.html, src/main.tsx, App.tsx shell stub, src/engine/types.ts, src/styles/tokens.css — freezes the type contracts, DIFFICULTY_BANDS strings, fixed PRNG draw order (documented in types.ts), and the render-vocabulary class names before anyone builds in parallel",
+          "Wave 2 (four agents in parallel, non-overlapping): [A] engine — rng.ts, generate.ts, scout.ts, engine.test.ts; [B] data — realEstate.ts, law.ts, finance.ts, science.ts, index.ts, packs.test.ts; [C] look — app.css, SparkButton.tsx, Ticket.tsx, FilterChips.tsx, StubBook.tsx, ScoutLadder.tsx, RemixCards.tsx (built against fixture objects typed from wave-1 contracts); [D] state+lib — favorites.ts, favorites.test.ts, stats.ts, clipboard.ts, share.ts, confetti.ts",
+          "Wave 3 (one integrator agent): SparkPage.tsx, ScoutPage.tsx, finish App.tsx wiring — connect engine+data+components+state, share-URL hydration, dark mode, confetti hookup",
+          "Wave 4 (integrator + one QA agent): definition-of-done browser pass — all five must-haves exercised in a real browser, npm test and npm run build green, 375px/1280px no-horizontal-scroll sweep, console-error check, motion timing polish"
+        ],
+        "risks": [
+          "Seed determinism is fragile under refactor: generate() must make PRNG draws in one fixed order (template, then variables in declaration order, then twist). If a wave-2 builder reorders draws or adds a conditional draw, same-seed string equality silently breaks. Mitigation is contractual: the draw sequence is written into types.ts in wave 1 and pinned by golden-string tests with explicit seeds.",
+          "Conjunctive filtering can hit an empty pool (e.g., a subject authored with no 'hard' templates). packs.test.ts enforces every subject x difficulty combo is non-empty, which constrains the data authors — if that constraint slips, filtered generation throws or emits out-of-filter templates, violating a domain rule.",
+          "The prompt id hash must have exactly one implementation (in generate.ts). If the favorites or share builders hand-roll their own hash in wave 2, dedupe and URL replay disagree; the contract puts id on GeneratedPrompt so downstream code never computes it.",
+          "Data authoring is the largest single time sink: 40+ templates x variable pools x twists, all needing to read well after random fill-in. A builder rushing this produces mad-libs gibberish that no visual treatment can rescue. The pack files are split four ways inside one agent's scope so quality effort can be rebalanced mid-wave without file conflicts.",
+          "The ticket/ladder aesthetic depends on components (wave 2C) built against fixtures matching real engine output (wave 2A). Any drift between fixture shape and GeneratedPrompt/ScoutResult surfaces only at wave-3 integration; the fixed 4-tuple ScoutResult type and frozen render-vocabulary classes exist specifically to shrink that seam.",
+          "Dark mode with a committed paper-and-ink palette cannot be an auto-inversion — the stamp and stripe hues need designed dark values in tokens.css. If wave 1 only ships light tokens, the dark nice-to-have becomes an unbudgeted wave-4 scramble.",
+          "Micro-animations (ticket print, staircase build, confetti) risk blocking interaction or causing layout shift on a 375px phone; the contract caps them at 300ms CSS-only and fire-and-forget canvas, and prefers-reduced-motion must be honored or the QA sweep flags it."
+        ],
+        "delight": [
+          "The coin-button smack: a big tactile arcade button that visibly depresses, then a prompt ticket 'prints' downward with a perforation tear — the whole thing under 300ms, so it feels like a toy but responds like a tool.",
+          "Seed as serial number: every ticket bears '№ A4F2-9C'. Paste that URL to a friend and they get the string-identical prompt — determinism turned from a test requirement into the sharing feature.",
+          "The difficulty rubber stamp: a slightly rotated ink stamp reading MEDIUM · an evening or two (3–6 hours) — the fixed time-band rule made physical and instantly readable.",
+          "Brain Scout's staircase: four rungs build upward Weekend → Week → Month → Moonshot with your own words highlighted verbatim inside each rung — you watch your small idea literally climb.",
+          "The Stub Book: favorites as torn ticket stubs, and 'Export as Markdown' turns a night of sparking into a tidy project shortlist.",
+          "Paper-scrap confetti (not generic confetti dots — tiny ticket scraps in the subject's hue) on each spark, plus the marquee-bulb 'prompts sparked today' counter ticking up.",
+          "One screenshot test: paper background, ink type, orange coin button, a stamped ticket with a serial number — nothing else on the web looks like this booth."
+        ]
+      }
+    ],
+    "judge": {
+      "scores": [
+        {
+          "candidate": "A",
+          "must_haves": 8,
+          "buildability": 10,
+          "value": 7,
+          "coherence": 9,
+          "total": 34
+        },
+        {
+          "candidate": "B",
+          "must_haves": 9,
+          "buildability": 9,
+          "value": 9,
+          "coherence": 9,
+          "total": 36
+        },
+        {
+          "candidate": "C",
+          "must_haves": 9,
+          "buildability": 7,
+          "value": 9,
+          "coherence": 10,
+          "total": 35
+        }
+      ],
+      "winner": "B",
+      "rationale": "B wins at 36 (A 34, C 35). Must-haves: B traces every must-have and domain rule to a named file and test — twist pool in PackEntry with a \"twist inclusion\" assertion (spec must-have #2 is \"subject x template x variables x twist\"), promptId = hash(seed+templateId), prompt-spark:favorites:v1, order-typed 4-rung tuple, verbatim-seed grep, exactly-3-distinct-lens remixes, >=10-per-pack structural test. A, despite otherwise airtight domain-rule coverage, omits the twist component entirely — it appears nowhere in A's TEMPLATE shape, generate() description, file_plan, or tests, and a miss on a must-have component is a miss (must_haves 8). C covers all must-haves and uniquely enforces subject×difficulty combo non-emptiness, but its buildability is the weakest: 32 files of bespoke aesthetics, wave-2 UI built against fixtures with acknowledged drift risk, delighters (share, confetti, stats) built in wave 2 before must-haves are proven, and a single wave-3 integrator owning both pages plus all wiring, share hydration, dark mode, and confetti — the classic overnight bottleneck (buildability 7). B's build order is risk-shaped for an overnight run: a wave-2.5 checkpoint requires all five must-haves clicked through in a real browser before any delighter starts, delighters add zero dependencies and only consume the frozen core, and wave 4 has an explicit revert-over-debug kill-switch — so even a wave-3 failure still ships a definition-of-done product. That gives B near-A buildability (9 vs 10) while shipping all four nice-to-haves plus the Remix-in-Brain-Scout bridge (value 9 vs A's 7, since A cuts every nice-to-have against taste notes calling for playful/fun). B's only verified gap is that the dedupe id for saved Brain Scout items is unspecified — precisely the ambiguity A resolves, which is the first steal.",
+      "steals": [
+        {
+          "from": "A",
+          "what": "The scout-favorites id resolution: saved Brain Scout rungs/remixes get id = hash('scout:'+seedPhrase+rung-or-lens-label) so they flow through the identical favorites add/dedupe/remove path as generated prompts — closes B's only unspecified domain-rule edge, and the integrator verifies double-saving a rung is a no-op."
+        },
+        {
+          "from": "C",
+          "what": "packs.test assertion that every subject x difficulty combo is non-empty, so conjunctive filtering can never hit an empty template pool — B's packs.test only checks >=10 entries and per-entry validity, leaving filtered generation able to fail on e.g. a subject authored with no hard templates."
+        },
+        {
+          "from": "C",
+          "what": "Seed-as-serial-number: encode the seed as a short visible serial (e.g. 'No A4F2-9C') printed on the prompt card — makes B's determinism user-visible and gives share links a human-readable identity for free via the existing rng/share modules."
+        },
+        {
+          "from": "C",
+          "what": "prefers-reduced-motion honored by the confetti burst and slot-reveal animation, with all micro-animations capped CSS-only and fire-and-forget — a one-line guard that keeps B's delighter layer from violating the 'nothing that blocks interaction' taste note on low-power phones."
+        },
+        {
+          "from": "A",
+          "what": "Test the verbatim-seed rule with a mixed-case multi-word seed phrase (in addition to B's punctuation-heavy case) to catch rung templates that capitalize or title-case the interpolated phrase."
+        }
+      ]
+    }
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Design"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Judge"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "design-minimal",
+      "phaseIndex": 1,
+      "phaseTitle": "Design",
+      "agentId": "a87a9b2430dee1475",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786257747738,
+      "queuedAt": 1786257745552,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Prompt Spark",
+      "promptPreview": "You are one of three competing designers on an overnight autonomous\nbuild. You see only your own brief. Produce a complete design\ncandidate for the spec below.\n\nYour brief: MINIMAL. Design the smallest coherent product that\nsatisfies EVERY must-have in the spec, and nothing else. Cut every\ndelighter that does not fall out of the core design for free. The win\ncondition is: nothing left to remove, n…",
+      "lastProgressAt": 1786257841154,
+      "tokens": 24193,
+      "toolCalls": 1,
+      "durationMs": 93416,
+      "resultPreview": "{\"name\":\"Prompt Spark\",\"summary\":\"A single-page React+Vite toy-tool: one big Surprise-me button drives a pure, seed-deterministic prompt generator over four curated subject packs (Real Estate, Law, Finance, Science; 10 templates each with randomized fill-in variables), with subject+difficulty filtering, fixed difficulty→time-band tags, one-tap copy, a localStorage favorites list, and a Brain Scout…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "design-ambitious",
+      "phaseIndex": 1,
+      "phaseTitle": "Design",
+      "agentId": "a601f9b2110f91dd4",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786257748172,
+      "queuedAt": 1786257745552,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Spark Machine — prompt-spark with a slot-machine soul",
+      "promptPreview": "You are one of three competing designers on an overnight autonomous\nbuild. You see only your own brief. Produce a complete design\ncandidate for the spec below.\n\nYour brief: AMBITIOUS. Design the version that makes the must-haves\nSING, plus the highest-leverage delighters — the features that turn a\ncheckbox demo into something people show their friends. But it must\nstill be buildable overnight by p…",
+      "lastProgressAt": 1786257854845,
+      "tokens": 24192,
+      "toolCalls": 1,
+      "durationMs": 106673,
+      "resultPreview": "{\"name\":\"Spark Machine — prompt-spark with a slot-machine soul\",\"summary\":\"A pure-function prompt engine wrapped in a toy: one giant Surprise-me button that slot-reveals a fully-formed project prompt, four richly-authored subject packs, a Brain Scout that turns any seed phrase into a 4-rung scope ladder plus 3 lens remixes, and a delighter layer (shareable links, confetti + sparked-today streak, d…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "design-taste",
+      "phaseIndex": 1,
+      "phaseTitle": "Design",
+      "agentId": "ae4c42879575c86fe",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786257748231,
+      "queuedAt": 1786257745552,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Spark Booth — a carnival ticket booth for project prompts",
+      "promptPreview": "You are one of three competing designers on an overnight autonomous\nbuild. You see only your own brief. Produce a complete design\ncandidate for the spec below.\n\nYour brief: TASTE-FORWARD. Organize the whole design around aesthetic\nand experiential identity: distinctive look and feel FIRST, and let\nthe architecture serve it. Lean hard on the taste notes. The product\nshould be recognizable from a si…",
+      "lastProgressAt": 1786257862299,
+      "tokens": 24199,
+      "toolCalls": 1,
+      "durationMs": 114068,
+      "resultPreview": "{\"name\":\"Spark Booth — a carnival ticket booth for project prompts\",\"summary\":\"prompt-spark rendered as a carnival ticket booth: you smack a big arcade coin-button and a project prompt \\\"prints\\\" out as a perforated paper ticket — subject color stripe, rubber-stamped difficulty + time band, and the generation seed printed as the ticket's serial number. Brain Scout is the booth's back room: type a …"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "design-judge",
+      "phaseIndex": 2,
+      "phaseTitle": "Judge",
+      "agentId": "a4e83718b26874630",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1786257864588,
+      "queuedAt": 1786257862300,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "B",
+      "promptPreview": "You are the design judge for an overnight autonomous build. 3 anonymous candidates follow.\nYou do not know who produced which, and you must not guess — judge the\nartifact, not the description. You have NO context beyond what is\nbelow. Judge fresh.\n\nAdversarial conduct rules:\n- Your job is to find failures in each candidate, not to admire\n  summaries. Trust nothing. Verify everything against the sp…",
+      "lastProgressAt": 1786257969694,
+      "tokens": 40376,
+      "toolCalls": 1,
+      "durationMs": 105106,
+      "resultPreview": "{\"scores\":[{\"candidate\":\"A\",\"must_haves\":8,\"buildability\":10,\"value\":7,\"coherence\":9,\"total\":34},{\"candidate\":\"B\",\"must_haves\":9,\"buildability\":9,\"value\":9,\"coherence\":9,\"total\":36},{\"candidate\":\"C\",\"must_haves\":9,\"buildability\":7,\"value\":9,\"coherence\":10,\"total\":35}],\"winner\":\"B\",\"rationale\":\"B wins at 36 (A 34, C 35). Must-haves: B traces every must-have and domain rule to a named file and test …"
+    }
+  ],
+  "totalTokens": 112960,
+  "totalToolCalls": 4
+}
