@@ -89,10 +89,10 @@ export default function PromptCard({ prompt }: PromptCardProps) {
         <span className="tag-chip">{prompt.timeBand}</span>
       </div>
       <div className="prompt-actions">
-        <button type="button" className="copy-button" onClick={handleCopy}>
+        <button type="button" className="copy-button action-btn" onClick={handleCopy}>
           {copyState === 'copied' ? 'Copied!' : copyState === 'failed' ? 'Copy failed' : 'Copy'}
         </button>
-        <button type="button" className="save-button" onClick={handleSave}>
+        <button type="button" className="save-button action-btn" onClick={handleSave}>
           {saved ? 'Saved ✓' : 'Save'}
         </button>
       </div>

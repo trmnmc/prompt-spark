@@ -162,6 +162,48 @@
   font-size: var(--text-sm);
 }
 
+/* ---- action buttons: Copy/Save/Remove + share-link, quiet next to .tag-chip ---- */
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 80ms ease;
+}
+
+.action-btn:hover {
+  border-color: var(--color-accent-2);
+  background: var(--color-accent-2-soft);
+}
+
+.action-btn:active {
+  transform: scale(0.96);
+}
+
+.action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.action-btn--danger {
+  color: var(--color-accent);
+  border-color: var(--color-accent-soft);
+}
+
+.action-btn--danger:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+
 .empty-state {
   color: var(--color-ink-soft);
   background: var(--color-surface);

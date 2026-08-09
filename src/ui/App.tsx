@@ -101,7 +101,7 @@ export default function App() {
             <PromptCard prompt={prompt} />
             {prompt && (
               <div className="share-link-row">
-                <button type="button" className="share-link-button" onClick={handleCopyShareLink}>
+                <button type="button" className="share-link-button action-btn" onClick={handleCopyShareLink}>
                   {linkCopied ? 'Link copied!' : 'Copy share link \u{1F517}'}
                 </button>
               </div>
