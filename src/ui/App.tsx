@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 
 import { generate } from '../core/generate'
 import { decodeShare, encodeShare } from '../core/share'
-import type { Filters } from '../core/types'
+import type { Filters, ScoutResult } from '../core/types'
 import '../styles/app.css'
 import FilterBar from './FilterBar'
 import PromptCard from './PromptCard'
@@ -27,6 +27,11 @@ export default function App() {
   const [filters, setFilters] = useState<Filters>(() => decodeShare(window.location.search)?.filters ?? {})
   const [view, setView] = useState<View>('generator')
   const [linkCopied, setLinkCopied] = useState(false)
+
+  // Lifted out of BrainScoutView so switching tabs and back doesn't wipe
+  // the scouted ladder — mirrors how seed/filters survive here already.
+  const [scoutPhrase, setScoutPhrase] = useState('')
+  const [scoutResult, setScoutResult] = useState<ScoutResult | null>(null)
 
   // Pure downstream of seed + filters — generate() itself never touches
   // Math.random; randomness lives only at the UI boundary below.
@@ -89,7 +94,14 @@ export default function App() {
             )}
           </>
         )}
-        {view === 'scout' && <BrainScoutView />}
+        {view === 'scout' && (
+          <BrainScoutView
+            phrase={scoutPhrase}
+            onPhraseChange={setScoutPhrase}
+            result={scoutResult}
+            onResultChange={setScoutResult}
+          />
+        )}
         {view === 'favorites' && <FavoritesView />}
       </main>
     </div>

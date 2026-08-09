@@ -22,7 +22,10 @@ const SLOT_RE = /\{([^{}]+)\}/g
  */
 function withTerminalPunctuation(text: string): string {
   const trimmed = text.replace(/\s+$/, '')
-  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`
+  // Allow a terminal mark to sit inside a trailing closing quote/paren,
+  // e.g. `no survivors."` — checking only the last character misses this
+  // and appends a redundant second terminal mark (`."` -> `.".`).
+  return /[.!?]["')]?$/.test(trimmed) ? trimmed : `${trimmed}.`
 }
 
 export function generate(seed: number, filters: Filters): GeneratedPrompt {

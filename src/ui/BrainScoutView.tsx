@@ -4,6 +4,14 @@ import { expand } from '../core/brainScout'
 import type { ScoutResult } from '../core/types'
 import { addFavorite, favId, loadFavorites } from '../state/favorites'
 
+export interface BrainScoutViewProps {
+  /** Lifted to App so a tab switch away and back doesn't wipe the ladder. */
+  phrase: string
+  onPhraseChange: (phrase: string) => void
+  result: ScoutResult | null
+  onResultChange: (result: ScoutResult) => void
+}
+
 /** Randomness lives only at this UI boundary — expand() itself is pure. */
 function randomSeed(): number {
   return Math.floor(Math.random() * 2 ** 31)
@@ -71,20 +79,17 @@ function ScoutCard({ className, label, text, id }: ScoutCardProps) {
  * favorites store. Re-scout re-rolls the seed for fresh phrasings while
  * keeping the same seed phrase.
  */
-export default function BrainScoutView() {
-  const [phrase, setPhrase] = useState('')
-  const [result, setResult] = useState<ScoutResult | null>(null)
-
+export default function BrainScoutView({ phrase, onPhraseChange, result, onResultChange }: BrainScoutViewProps) {
   const trimmed = phrase.trim()
 
   function handleSubmit() {
     if (trimmed === '') return
-    setResult(expand(phrase, randomSeed()))
+    onResultChange(expand(phrase, randomSeed()))
   }
 
   function handleRescout() {
     if (!result) return
-    setResult(expand(result.seedPhrase, randomSeed()))
+    onResultChange(expand(result.seedPhrase, randomSeed()))
   }
 
   return (
@@ -102,7 +107,7 @@ export default function BrainScoutView() {
           placeholder="Type a seed idea…"
           aria-label="Seed idea"
           value={phrase}
-          onChange={(e) => setPhrase(e.target.value)}
+          onChange={(e) => onPhraseChange(e.target.value)}
         />
         <button type="submit" disabled={trimmed === ''}>
           Scout it 🔭
