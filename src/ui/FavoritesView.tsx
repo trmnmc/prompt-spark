@@ -1,14 +1,8 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 
-import type { Difficulty, Favorite } from '../core/types'
+import type { Favorite } from '../core/types'
 import { favId, loadFavorites, removeFavorite, subscribe } from '../state/favorites'
-
-/** Display labels — mirrors PromptCard's difficulty chip labels. */
-const DIFFICULTY_LABELS: Record<Difficulty, string> = {
-  easy: 'Easy',
-  medium: 'Medium',
-  hard: 'Hard',
-}
+import { DIFFICULTY_LABELS, SUBJECT_LABELS } from './PromptCard'
 
 /** Inline line-clamp so long prompt/scout text truncates visually without editing app.css. */
 const clampStyle: CSSProperties = {
@@ -53,19 +47,37 @@ function useLocalFavorites(): Favorite[] {
 export default function FavoritesView() {
   const favorites = useLocalFavorites()
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [failedId, setFailedId] = useState<string | null>(null)
 
-  function handleCopy(id: string, text: string) {
+  async function handleCopy(id: string, text: string) {
     // Guard: navigator.clipboard is undefined in some contexts (insecure
-    // origins, older browsers, test environments) — don't throw either way.
-    navigator.clipboard
-      ?.writeText(text)
-      ?.catch(() => {
-        // best-effort copy; nothing actionable to do if it's denied
-      })
-    setCopiedId(id)
-    window.setTimeout(() => {
-      setCopiedId((current) => (current === id ? null : current))
-    }, 1500)
+    // origins, older browsers, test environments). Either the API being
+    // absent or the write itself rejecting (permissions, unsupported,
+    // denied) is a real failure — surface it instead of silently
+    // pretending the copy succeeded.
+    const clipboard = navigator.clipboard
+    let failed = false
+    if (!clipboard?.writeText) {
+      failed = true
+    } else {
+      try {
+        await clipboard.writeText(text)
+      } catch {
+        failed = true
+      }
+    }
+
+    if (failed) {
+      setFailedId(id)
+      window.setTimeout(() => {
+        setFailedId((current) => (current === id ? null : current))
+      }, 1500)
+    } else {
+      setCopiedId(id)
+      window.setTimeout(() => {
+        setCopiedId((current) => (current === id ? null : current))
+      }, 1500)
+    }
   }
 
   function handleRemove(id: string) {
@@ -91,6 +103,7 @@ export default function FavoritesView() {
         const id = favId(f)
         const fullText = f.kind === 'prompt' ? f.prompt.text : f.text
         const isCopied = copiedId === id
+        const isFailed = failedId === id
 
         return (
           <div className="fav-item" key={id}>
@@ -109,10 +122,10 @@ export default function FavoritesView() {
                       marginTop: 'var(--space-2)',
                     }}
                   >
-                    <span className="tag-chip">{f.prompt.subject}</span>
+                    <span className="tag-chip">{SUBJECT_LABELS[f.prompt.subject]}</span>
                     <span className="tag-chip">{DIFFICULTY_LABELS[f.prompt.difficulty]}</span>
                     <span className="tag-chip">{f.prompt.timeBand}</span>
-                    <span className="serial-tag">{f.prompt.serial}</span>
+                    <span className="serial-tag">No {f.prompt.serial}</span>
                   </div>
                 </>
               ) : (
@@ -134,7 +147,7 @@ export default function FavoritesView() {
               }}
             >
               <button type="button" onClick={() => handleCopy(id, fullText)}>
-                {isCopied ? 'Copied!' : 'Copy'}
+                {isCopied ? 'Copied!' : isFailed ? 'Copy failed' : 'Copy'}
               </button>
               <button type="button" onClick={() => handleRemove(id)}>
                 Remove

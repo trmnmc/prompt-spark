@@ -3,16 +3,24 @@ import { useEffect, useState } from 'react'
 import type { Difficulty, GeneratedPrompt, Subject } from '../core/types'
 import { addFavorite, favId, loadFavorites } from '../state/favorites'
 
-/** Display labels — mirrors FilterBar's subject chip labels. */
-const SUBJECT_LABELS: Record<Subject, string> = {
+/**
+ * Display labels — mirrors FilterBar's subject chip labels. Exported so
+ * other views (e.g. FavoritesView) render the same human-readable text
+ * instead of the raw camelCase enum values.
+ */
+export const SUBJECT_LABELS: Record<Subject, string> = {
   realEstate: 'Real Estate',
   law: 'Law',
   finance: 'Finance',
   science: 'Science',
 }
 
-/** Display labels — mirrors FilterBar's difficulty chip labels. */
-const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+/**
+ * Display labels — mirrors FilterBar's difficulty chip labels. Exported so
+ * other views (e.g. FavoritesView) render the same human-readable text
+ * instead of the raw camelCase enum values.
+ */
+export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   easy: 'Easy',
   medium: 'Medium',
   hard: 'Hard',
@@ -22,18 +30,20 @@ export interface PromptCardProps {
   prompt?: GeneratedPrompt
 }
 
+type CopyState = 'idle' | 'copied' | 'failed'
+
 /**
  * Renders a fully resolved prompt: the generated text, subject +
  * difficulty + time-band chips, a serial tag, and Copy / Save actions.
  */
 export default function PromptCard({ prompt }: PromptCardProps) {
-  const [copied, setCopied] = useState(false)
+  const [copyState, setCopyState] = useState<CopyState>('idle')
   const [saved, setSaved] = useState(false)
 
   // Reset the transient button states whenever a new prompt lands (new
   // seed/filters), and pick up the correct "already saved" state.
   useEffect(() => {
-    setCopied(false)
+    setCopyState('idle')
     setSaved(prompt ? loadFavorites().some((f) => favId(f) === prompt.id) : false)
   }, [prompt?.id])
 
@@ -46,16 +56,20 @@ export default function PromptCard({ prompt }: PromptCardProps) {
 
   async function handleCopy() {
     // navigator.clipboard is undefined in jsdom / some embedded contexts —
-    // guard it rather than assume it exists.
+    // guard it rather than assume it exists. Either the API being absent
+    // or the write itself rejecting (permissions, unsupported, denied) is
+    // a real failure — surface it instead of silently claiming success.
     const clipboard = navigator.clipboard
-    if (clipboard?.writeText) {
-      try {
-        await clipboard.writeText(resolvedPrompt.text)
-      } catch {
-        // Write can fail (permissions, unsupported); still surface feedback.
-      }
+    if (!clipboard?.writeText) {
+      setCopyState('failed')
+      return
     }
-    setCopied(true)
+    try {
+      await clipboard.writeText(resolvedPrompt.text)
+      setCopyState('copied')
+    } catch {
+      setCopyState('failed')
+    }
   }
 
   function handleSave() {
@@ -76,7 +90,7 @@ export default function PromptCard({ prompt }: PromptCardProps) {
       </div>
       <div className="prompt-actions">
         <button type="button" className="copy-button" onClick={handleCopy}>
-          {copied ? 'Copied!' : 'Copy'}
+          {copyState === 'copied' ? 'Copied!' : copyState === 'failed' ? 'Copy failed' : 'Copy'}
         </button>
         <button type="button" className="save-button" onClick={handleSave}>
           {saved ? 'Saved ✓' : 'Save'}

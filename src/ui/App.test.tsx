@@ -43,6 +43,20 @@ function textOf(el: Element | null): string {
   return el?.textContent ?? ''
 }
 
+/**
+ * Sets a controlled <input>'s value through the native setter (bypassing
+ * the tracked instance setter React installs) before dispatching an
+ * `input` event, so React's onChange fires with the new value — a plain
+ * `input.value = x` assignment can be swallowed by React's dirty-check.
+ */
+function setInputValue(input: HTMLInputElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
+  act(() => {
+    setter.call(input, value)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+
 describe('App shell', () => {
   it('renders all three tab buttons, generator active by default', () => {
     const tabs = Array.from(container.querySelectorAll('.tab-button'))
@@ -221,5 +235,27 @@ describe('App shell', () => {
     const written = writeText.mock.calls[0][0] as string
     expect(written).toContain('seed=')
     expect(textOf(shareButton)).toBe('Link copied!')
+  })
+
+  it('Brain Scout: submitting a phrase renders 4 ladder rungs + 3 remixes, first rung containing the phrase verbatim', () => {
+    const tabs = () => Array.from(container.querySelectorAll('.tab-button'))
+    const scoutTab = tabs().find((t) => textOf(t) === 'Brain Scout')!
+    click(scoutTab)
+
+    const phrase = 'launch a pop-up bakery'
+    const input = container.querySelector('input[aria-label="Seed idea"]') as HTMLInputElement
+    expect(input).not.toBeNull()
+    setInputValue(input, phrase)
+
+    const form = container.querySelector('.scout-input-row') as HTMLFormElement
+    act(() => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+
+    const rungs = container.querySelectorAll('.ladder-rung')
+    const remixes = container.querySelectorAll('.remix-card')
+    expect(rungs.length).toBe(4)
+    expect(remixes.length).toBe(3)
+    expect(textOf(rungs[0])).toContain(phrase)
   })
 })
