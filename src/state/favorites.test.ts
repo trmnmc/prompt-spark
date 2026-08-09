@@ -1,7 +1,15 @@
+import { act, createElement } from 'react'
+import { createRoot } from 'react-dom/client'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { FAVORITES_KEY, type Favorite, type GeneratedPrompt } from '../core/types'
-import { addFavorite, favId, loadFavorites, removeFavorite } from './favorites'
+import { addFavorite, favId, loadFavorites, removeFavorite, useFavorites } from './favorites'
+
+// Tells React this environment intentionally drives updates via act()
+// (only the useFavorites mount/update tests below use it); without
+// this, React logs a spurious "not configured to support act(...)"
+// warning even though act() is used correctly.
+;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 function makePrompt(id: string): GeneratedPrompt {
   return {
@@ -141,5 +149,95 @@ describe('persistence across simulated reload', () => {
     const raw = localStorage.getItem(FAVORITES_KEY)
     expect(raw).not.toBeNull()
     expect(JSON.parse(raw as string)).toEqual([promptFavorite('p1')])
+  })
+})
+
+describe('useFavorites (mount + store-change updates)', () => {
+  // KI-1 regression: on the broken implementation, useFavorites() used
+  // loadFavorites (a fresh-array-per-call reader) directly as
+  // useSyncExternalStore's getSnapshot, violating its "same reference
+  // until data changes" contract. React responds by tearing down the
+  // mount with "Maximum update depth exceeded" — so this test fails on
+  // the pre-fix code and passes once getSnapshot returns a cached,
+  // stable reference.
+  it('mounts without error, reflects the store, and re-renders exactly once per store change', () => {
+    let renderCount = 0
+    function FavoritesCount() {
+      const favorites = useFavorites()
+      renderCount += 1
+      return createElement('div', null, `count:${favorites.length}`)
+    }
+
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    try {
+      act(() => {
+        root.render(createElement(FavoritesCount))
+      })
+
+      expect(container.textContent).toBe('count:0')
+      expect(renderCount).toBe(1)
+
+      act(() => {
+        addFavorite(promptFavorite('mount-1'))
+      })
+
+      expect(container.textContent).toBe('count:1')
+      expect(renderCount).toBe(2)
+
+      act(() => {
+        addFavorite(promptFavorite('mount-2'))
+      })
+
+      expect(container.textContent).toBe('count:2')
+      expect(renderCount).toBe(3)
+    } finally {
+      act(() => {
+        root.unmount()
+      })
+      container.remove()
+    }
+  })
+
+  it('getSnapshot returns the same reference across reads with no writes between them', () => {
+    const snapshots: Favorite[][] = []
+    function Capture({ tick: _tick }: { tick: number }): null {
+      snapshots.push(useFavorites())
+      return null
+    }
+
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    try {
+      // Re-render (via a changed prop) without any store write in
+      // between: a stable getSnapshot must hand back the identical
+      // array reference both times.
+      act(() => {
+        root.render(createElement(Capture, { tick: 0 }))
+      })
+      act(() => {
+        root.render(createElement(Capture, { tick: 1 }))
+      })
+
+      expect(snapshots).toHaveLength(2)
+      expect(snapshots[0]).toBe(snapshots[1])
+
+      // After a real write, the cache must invalidate: a fresh, distinct
+      // reference (with the new data) must be handed out.
+      act(() => {
+        addFavorite(promptFavorite('stability-1'))
+      })
+
+      expect(snapshots).toHaveLength(3)
+      expect(snapshots[2]).not.toBe(snapshots[1])
+      expect(snapshots[2]).toHaveLength(1)
+    } finally {
+      act(() => {
+        root.unmount()
+      })
+    }
   })
 })

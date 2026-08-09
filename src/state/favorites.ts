@@ -18,7 +18,18 @@ export function favId(f: Favorite): string {
 
 const listeners = new Set<() => void>()
 
+/**
+ * Cached snapshot for useSyncExternalStore's getSnapshot contract: it
+ * must return the SAME reference across calls until the underlying
+ * data actually changes, or React concludes the store is perpetually
+ * changing and loops ("Maximum update depth exceeded"). Invalidated
+ * (set to null) inside notify() so the next read after a write
+ * recomputes it; null also covers the very first read.
+ */
+let cachedSnapshot: Favorite[] | null = null
+
 function notify(): void {
+  cachedSnapshot = null
   for (const fn of listeners) fn()
 }
 
@@ -77,7 +88,20 @@ export function subscribe(fn: () => void): () => void {
   }
 }
 
+/**
+ * Snapshot reader for useSyncExternalStore: returns a cached array
+ * reference that only changes when a write actually mutates the
+ * store (see cachedSnapshot above). Internal — not part of the
+ * public store API — loadFavorites() remains the fresh-array reader.
+ */
+function getSnapshot(): Favorite[] {
+  if (cachedSnapshot === null) {
+    cachedSnapshot = loadFavorites()
+  }
+  return cachedSnapshot
+}
+
 /** React hook returning the current favorites list, kept in sync via useSyncExternalStore. */
 export function useFavorites(): Favorite[] {
-  return useSyncExternalStore(subscribe, loadFavorites, loadFavorites)
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
