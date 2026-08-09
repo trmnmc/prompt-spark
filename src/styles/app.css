@@ -247,3 +247,23 @@
     min-height: 22vh;
   }
 }
+
+/* --- AI mode (settings + notes) --- */
+.app-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.settings-toggle { flex-shrink: 0; }
+.settings-panel {
+  display: flex; flex-direction: column; gap: var(--space-3);
+  background: var(--color-surface); border: 1px solid var(--color-line);
+  border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-4);
+}
+.settings-panel h2 { margin: 0; font-size: var(--text-lg); }
+.settings-note { margin: 0; font-size: var(--text-sm); opacity: 0.85; }
+.settings-row { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
+.settings-row--stacked { flex-direction: column; align-items: stretch; gap: var(--space-1); }
+.settings-row input[type='password'], .settings-row select {
+  min-height: 40px; padding: 0 var(--space-2);
+  border: 1px solid var(--color-line); border-radius: var(--radius-sm);
+  background: var(--color-bg); color: inherit; font: inherit;
+}
+.ai-note { margin: 0; font-size: var(--text-sm); color: var(--color-accent-2); }
+.surprise-hero:disabled { opacity: 0.7; cursor: wait; }

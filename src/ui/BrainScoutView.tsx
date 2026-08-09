@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react'
 
-import { expand } from '../core/brainScout'
 import type { ScoutResult } from '../core/types'
 import { addFavorite, favId, loadFavorites, removeFavorite } from '../state/favorites'
 
 export interface BrainScoutViewProps {
-  /** Lifted to App so a tab switch away and back doesn't wipe the ladder. */
+  /**
+   * ALL scout flow state is lifted to App — including loading and the
+   * in-flight ticket bookkeeping — so a tab switch (which unmounts this
+   * view) can't orphan an in-flight scout or reset the loading state.
+   */
   phrase: string
   onPhraseChange: (phrase: string) => void
   result: ScoutResult | null
-  onResultChange: (result: ScoutResult) => void
-}
-
-/** Randomness lives only at this UI boundary — expand() itself is pure. */
-function randomSeed(): number {
-  return Math.floor(Math.random() * 2 ** 31)
+  loading: boolean
+  note: string | null
+  onScout: (phrase: string) => void
 }
 
 interface ScoutCardProps {
@@ -97,17 +97,17 @@ function ScoutCard({ className, label, text, id }: ScoutCardProps) {
  * favorites store. Re-scout re-rolls the seed for fresh phrasings while
  * keeping the same seed phrase.
  */
-export default function BrainScoutView({ phrase, onPhraseChange, result, onResultChange }: BrainScoutViewProps) {
+export default function BrainScoutView({ phrase, onPhraseChange, result, loading, note, onScout }: BrainScoutViewProps) {
   const trimmed = phrase.trim()
 
   function handleSubmit() {
-    if (trimmed === '') return
-    onResultChange(expand(phrase, randomSeed()))
+    if (trimmed === '' || loading) return
+    onScout(phrase)
   }
 
   function handleRescout() {
-    if (!result) return
-    onResultChange(expand(result.seedPhrase, randomSeed()))
+    if (!result || loading) return
+    onScout(result.seedPhrase)
   }
 
   return (
@@ -127,15 +127,17 @@ export default function BrainScoutView({ phrase, onPhraseChange, result, onResul
           value={phrase}
           onChange={(e) => onPhraseChange(e.target.value)}
         />
-        <button type="submit" disabled={trimmed === ''}>
-          Scout it 🔭
+        <button type="submit" disabled={trimmed === '' || loading}>
+          {loading ? 'Scouting…' : 'Scout it 🔭'}
         </button>
       </form>
 
+      {note && <p className="ai-note">{note}</p>}
+
       {result ? (
         <>
-          <button type="button" onClick={handleRescout} style={{ alignSelf: 'flex-start' }}>
-            Re-scout
+          <button type="button" onClick={handleRescout} disabled={loading} style={{ alignSelf: 'flex-start' }}>
+            {loading ? 'Scouting…' : 'Re-scout'}
           </button>
           {result.rungs.map((r) => (
             <ScoutCard key={r.id} className="ladder-rung" label={r.rung} text={r.text} id={r.id} />
