@@ -8,7 +8,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk'
 
-import { AiError } from './ai'
+import { AiError, toAiError } from './ai'
 import type { BlockKind, Brief, Proposal } from './brief'
 import { renderDraft } from './render'
 import type { AiModel } from '../state/settings'
@@ -51,15 +51,23 @@ export function makeAnthropicClient(
   })
   return {
     async complete(req) {
-      const response = await client.messages.create({
-        model,
-        max_tokens: req.maxTokens,
-        // output_config is Anthropic-specific. Gateways reject unknown
-        // top-level fields, so it only goes out on the direct path.
-        ...(viaGateway ? {} : { output_config: { effort: 'low' as const } }),
-        system: req.system,
-        messages: [{ role: 'user', content: req.user }],
-      })
+      let response
+      try {
+        response = await client.messages.create({
+          model,
+          max_tokens: req.maxTokens,
+          // output_config is Anthropic-specific. Gateways reject unknown
+          // top-level fields, so it only goes out on the direct path.
+          ...(viaGateway ? {} : { output_config: { effort: 'low' as const } }),
+          system: req.system,
+          messages: [{ role: 'user', content: req.user }],
+        })
+      } catch (e) {
+        // Without this the raw SDK error escapes, fails the `instanceof
+        // AiError` check in App, and every real failure — bad key, 404,
+        // CORS — is reported to the user as "Unexpected error."
+        throw toAiError(e)
+      }
       if (response.stop_reason === 'refusal') {
         throw new AiError('The model declined this request.', true)
       }

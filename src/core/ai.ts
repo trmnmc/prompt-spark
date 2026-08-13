@@ -269,7 +269,12 @@ export async function aiScout(
   return { seedPhrase, rungs, remixes }
 }
 
-function toAiError(e: unknown): AiError {
+/**
+ * Maps anything thrown by the SDK to an AiError carrying a message worth
+ * showing. Exported because interview.ts needs the same mapping — without it
+ * every real API failure reaches the UI as a bare "Unexpected error."
+ */
+export function toAiError(e: unknown): AiError {
   if (e instanceof AiError) return e
   if (e instanceof Anthropic.AuthenticationError) {
     return new AiError('Invalid API key — check Settings.', false)
