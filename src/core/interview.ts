@@ -107,22 +107,18 @@ const PROPOSE_SYSTEM = [
   'Respond with ONLY the JSON object — no markdown fence, no preamble.',
 ].join(' ')
 
-export async function proposeNext(client: ModelClient, brief: Brief): Promise<Proposal | null> {
-  const raw = await client.complete({
-    system: PROPOSE_SYSTEM,
-    user: briefContext(brief),
-    maxTokens: 1000,
-    json: true,
-  })
-
+/**
+ * Shared proposal parser. Shape-checks before touching any field, so
+ * schema-noncompliant JSON surfaces as AiError rather than a raw TypeError
+ * escaping the module contract. Returns null only for {done:true}.
+ */
+function parseProposal(raw: string): Proposal | null {
   let parsed: unknown
   try {
     parsed = JSON.parse(stripFence(raw))
   } catch {
     throw new AiError('Model returned unparseable output.', true)
   }
-  // Shape-check before touching any field, so schema-noncompliant JSON
-  // surfaces as AiError rather than a raw TypeError escaping the contract.
   if (!parsed || typeof parsed !== 'object') {
     throw new AiError('Model output had the wrong shape.', true)
   }
@@ -148,6 +144,16 @@ export async function proposeNext(client: ModelClient, brief: Brief): Promise<Pr
     question: p.question,
     options: options.slice(0, 4),
   }
+}
+
+export async function proposeNext(client: ModelClient, brief: Brief): Promise<Proposal | null> {
+  const raw = await client.complete({
+    system: PROPOSE_SYSTEM,
+    user: briefContext(brief),
+    maxTokens: 1000,
+    json: true,
+  })
+  return parseProposal(raw)
 }
 
 const SENTENCE_SYSTEM = [
@@ -253,4 +259,37 @@ export async function sketchOutcome(
       assumption: g.assumption,
     }))
   return { outcome: p.outcome.trim(), guesses }
+}
+
+const CHIP_SYSTEM = [
+  'A prompt-preview had to assume something the prompt does not specify.',
+  'Write ONE interview question that pins it down.',
+  'Respond with ONLY JSON {"kind":...,"label":...,"question":...,"options":[...]} —',
+  `kind one of: ${KINDS.join(', ')}; label 1-2 words; question one plain sentence;`,
+  'options 2-4 short concrete answers. The FIRST option must be the assumption',
+  'exactly as given (confirming the default), alternatives after it.',
+].join(' ')
+
+/**
+ * Turns a sketch guess into a normal interview proposal. The assumption is
+ * forced to first position regardless of what the model returns, so accepting
+ * the recommended default always means confirming the guess.
+ */
+export async function chipToProposal(
+  client: ModelClient,
+  brief: Brief,
+  guess: Guess,
+): Promise<Proposal> {
+  const raw = await client.complete({
+    system: CHIP_SYSTEM,
+    user: `${briefContext(brief)}\n\nTopic: ${guess.topic}\nAssumption made: ${guess.assumption}`,
+    maxTokens: 800,
+    json: true,
+  })
+  const proposal = parseProposal(raw)
+  if (proposal === null) {
+    throw new AiError('Model output had the wrong shape.', true)
+  }
+  const rest = proposal.options.filter((o) => o !== guess.assumption)
+  return { ...proposal, options: [guess.assumption, ...rest].slice(0, 4) }
 }

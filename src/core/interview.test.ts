@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { AiError } from './ai'
 import { addBlock, createBrief } from './brief'
 import type { ModelClient } from './interview'
-import { polish, proposeNext, sketchOutcome, writeSentence } from './interview'
+import { chipToProposal, polish, proposeNext, sketchOutcome, writeSentence } from './interview'
 
 const T0 = 1_700_000_000_000
 const stub = (reply: string): ModelClient => ({ complete: async () => reply })
@@ -196,5 +196,50 @@ describe('sketchOutcome', () => {
   it('tolerates a markdown-fenced payload', async () => {
     const fenced = '```json\n' + GOOD_SKETCH + '\n```'
     expect((await sketchOutcome(stub(fenced), createBrief('x', T0))).guesses).toHaveLength(2)
+  })
+})
+
+describe('chipToProposal', () => {
+  const guess = { id: 'A1', topic: 'Data storage', assumption: 'kept in localStorage' }
+  const GOOD_CHIP = JSON.stringify({
+    kind: 'inputs',
+    label: 'Data Storage',
+    question: 'Where should the plant list live?',
+    options: ['kept in localStorage', 'a JSON file I export', 'a tiny backend'],
+  })
+
+  it('returns a valid Proposal with the assumption as first option', async () => {
+    const p = await chipToProposal(stub(GOOD_CHIP), createBrief('plants', T0), guess)
+    expect(p.options[0]).toBe('kept in localStorage')
+    expect(p.kind).toBe('inputs')
+  })
+
+  it('forces the assumption to first position if the model buried it', async () => {
+    const buried = JSON.stringify({
+      kind: 'inputs',
+      label: 'Data Storage',
+      question: 'Where?',
+      options: ['a tiny backend', 'kept in localStorage'],
+    })
+    const p = await chipToProposal(stub(buried), createBrief('x', T0), guess)
+    expect(p.options[0]).toBe('kept in localStorage')
+  })
+
+  it('prepends the assumption when the model omitted it entirely', async () => {
+    const missing = JSON.stringify({
+      kind: 'inputs',
+      label: 'Data Storage',
+      question: 'Where?',
+      options: ['a backend', 'a JSON file'],
+    })
+    const p = await chipToProposal(stub(missing), createBrief('x', T0), guess)
+    expect(p.options[0]).toBe('kept in localStorage')
+    expect(p.options).toHaveLength(3)
+  })
+
+  it('rejects malformed payloads as AiError', async () => {
+    await expect(chipToProposal(stub('null'), createBrief('x', T0), guess)).rejects.toBeInstanceOf(
+      AiError,
+    )
   })
 })
