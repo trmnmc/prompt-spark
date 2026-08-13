@@ -13,8 +13,18 @@ const block = (kind: 'intent' | 'wontDo', sentence: string) => ({
 })
 
 describe('renderDraft', () => {
-  it('returns the seed idea alone when no blocks are placed', () => {
-    expect(renderDraft(createBrief('a fridge app', T0))).toBe('a fridge app')
+  it('reads as a prompt from the very first render', () => {
+    expect(renderDraft(createBrief('a fridge app', T0))).toBe('Build a fridge app.')
+  })
+
+  it('keeps the seed idea at the head once other blocks land', () => {
+    const b = addBlock(createBrief('a fridge app', T0), block('wontDo', 'Leave out lists.'), T0)
+    expect(renderDraft(b)).toBe('Build a fridge app. Leave out lists.')
+  })
+
+  it('drops the implicit seed lead once a real intent block supersedes it', () => {
+    const b = addBlock(createBrief('a fridge app', T0), block('intent', 'Build a pantry tool.'), T0)
+    expect(renderDraft(b)).toBe('Build a pantry tool.')
   })
 
   it('joins frozen sentences into one paragraph', () => {

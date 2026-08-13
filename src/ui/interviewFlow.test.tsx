@@ -114,6 +114,25 @@ describe('interview flow', () => {
     expect(draftText()).toContain('a leftovers app')
   })
 
+  it('editing after a polish drops the now-stale polished text', () => {
+    mount()
+    type(seedInput(), 'a leftovers app')
+    click(button('start'))
+    click(button('add a block'))
+    const inputs = container.querySelectorAll<HTMLInputElement>('.add-block input')
+    type(inputs[0], 'Budget')
+    type(inputs[1], 'under $10 a month')
+    click(button('add'))
+
+    click(button('finish'))
+    expect(container.querySelector('[data-testid="polished"]')).toBeTruthy()
+
+    // Removing a block invalidates the polish — otherwise two contradictory
+    // prompts sit on screen at once.
+    click(button('remove'))
+    expect(container.querySelector('[data-testid="polished"]')).toBeNull()
+  })
+
   it('start over clears the brief and returns to the seed form', () => {
     mount()
     type(seedInput(), 'a leftovers app')

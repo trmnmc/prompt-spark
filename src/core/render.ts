@@ -25,8 +25,16 @@ export function templateSentence(kind: BlockKind, label: string, answer: string)
   return make ? `${make(trimmed)}.` : `${label}: ${trimmed}.`
 }
 
+/**
+ * The seed idea is an IMPLICIT intent block: it leads the draft until a real
+ * `intent` block supersedes it. Without this the user's own words silently
+ * drop out of their prompt the moment any other block lands.
+ */
 export function renderDraft(brief: Brief): string {
   const sentences = brief.blocks.map((b) => b.sentence.trim()).filter((s) => s !== '')
-  if (sentences.length === 0) return brief.seedIdea
+  const hasIntent = brief.blocks.some((b) => b.kind === 'intent' && b.sentence.trim() !== '')
+  if (!hasIntent) {
+    sentences.unshift(templateSentence('intent', 'Intent', brief.seedIdea))
+  }
   return sentences.join(' ')
 }

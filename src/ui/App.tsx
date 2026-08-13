@@ -51,6 +51,16 @@ export default function App() {
   const ticket = useRef(0)
 
   const draft = useMemo(() => (brief ? renderDraft(brief) : ''), [brief])
+
+  /**
+   * Every mutation goes through here. Persisting also drops any polished
+   * output: a polish pass describes the brief as it was, so leaving it up
+   * after an edit puts two contradictory prompts on screen at once.
+   */
+  function commit(next: Brief) {
+    saveBrief(next)
+    setPolished(null)
+  }
   const client = useMemo(
     () => (aiReady(settings) ? makeAnthropicClient(settings.apiKey, settings.model) : null),
     [settings],
@@ -117,7 +127,7 @@ export default function App() {
       },
       Date.now(),
     )
-    saveBrief(next)
+    commit(next)
     setProposal(null)
     setLoading(false)
     void askNext(next)
@@ -126,7 +136,7 @@ export default function App() {
   function handleAddOwn(label: string, answer: string) {
     if (!brief) return
     const kind: BlockKind = 'custom'
-    saveBrief(
+    commit(
       addBlock(
         brief,
         { kind, label, question: null, answer, sentence: templateSentence(kind, label, answer) },
@@ -139,7 +149,7 @@ export default function App() {
     if (!brief) return
     const block = brief.blocks.find((b) => b.id === id)
     if (!block) return
-    saveBrief(
+    commit(
       editBlock(
         brief,
         id,
@@ -151,12 +161,12 @@ export default function App() {
 
   function handleRemove(id: string) {
     if (!brief) return
-    saveBrief(removeBlock(brief, id, Date.now()))
+    commit(removeBlock(brief, id, Date.now()))
   }
 
   function handleMove(id: string, toIndex: number) {
     if (!brief) return
-    saveBrief(moveBlock(brief, id, toIndex, Date.now()))
+    commit(moveBlock(brief, id, toIndex, Date.now()))
   }
 
   async function handleFinish() {
