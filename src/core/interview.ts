@@ -11,6 +11,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { AiError, toAiError } from './ai'
 import type { BlockKind, Brief, Proposal } from './brief'
 import { renderDraft } from './render'
+import { djb2 } from './rng'
 import type { AiModel } from '../state/settings'
 
 const KINDS: BlockKind[] = ['intent', 'whoFor', 'hardPart', 'inputs', 'scope', 'wontDo', 'custom']
@@ -91,6 +92,10 @@ function briefContext(brief: Brief): string {
   ].join('\n\n')
 }
 
+function stripFence(raw: string): string {
+  return raw.trim().replace(/^```(?:json)?\n?|\n?```$/g, '')
+}
+
 const PROPOSE_SYSTEM = [
   'You run a short interview that turns a rough idea into one sharp, specific prompt.',
   'Return ONE next question as JSON: {"done":false,"kind":...,"label":...,"question":...,"options":[...]}.',
@@ -112,7 +117,7 @@ export async function proposeNext(client: ModelClient, brief: Brief): Promise<Pr
 
   let parsed: unknown
   try {
-    parsed = JSON.parse(raw.trim().replace(/^```(?:json)?\n?|\n?```$/g, ''))
+    parsed = JSON.parse(stripFence(raw))
   } catch {
     throw new AiError('Model returned unparseable output.', true)
   }
@@ -183,4 +188,69 @@ export async function polish(client: ModelClient, draft: string): Promise<string
   })
   const text = raw.trim()
   return text === '' ? draft : text
+}
+
+export interface Guess {
+  id: string
+  topic: string
+  assumption: string
+}
+
+const SKETCH_SYSTEM = [
+  'You predict what a coding agent handed this prompt would actually build.',
+  'Respond with ONLY JSON: {"outcome":"...","guesses":[{"topic":"...","assumption":"..."}]}.',
+  'outcome: 3-6 sentences, concrete — name the screens/surfaces, the core behaviors,',
+  'and end with what it will NOT include. No hedging, no "probably".',
+  'guesses: 0-5 assumptions you had to INVENT because the prompt does not specify them,',
+  'ONLY ones that would change what gets built — skip cosmetics. topic is 1-3 words;',
+  'assumption is the concrete choice you made.',
+].join(' ')
+
+/**
+ * The outcome sketch: what you'd get if you handed this prompt to a coding
+ * agent, plus every assumption the model had to invent to say so. Those
+ * inventions are the brief's ambiguities — the UI turns them into chips.
+ * Chips are a bonus: a malformed guesses array degrades to [] rather than
+ * failing a still-useful sketch.
+ */
+export async function sketchOutcome(
+  client: ModelClient,
+  brief: Brief,
+): Promise<{ outcome: string; guesses: Guess[] }> {
+  const raw = await client.complete({
+    system: SKETCH_SYSTEM,
+    user: briefContext(brief),
+    maxTokens: 1500,
+    json: true,
+  })
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(stripFence(raw))
+  } catch {
+    throw new AiError('Model returned unparseable output.', true)
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    throw new AiError('Model output had the wrong shape.', true)
+  }
+  const p = parsed as Record<string, unknown>
+  if (typeof p.outcome !== 'string' || p.outcome.trim() === '') {
+    throw new AiError('Model output had the wrong shape.', true)
+  }
+  const guesses: Guess[] = (Array.isArray(p.guesses) ? p.guesses : [])
+    .filter(
+      (g): g is { topic: string; assumption: string } =>
+        !!g &&
+        typeof g === 'object' &&
+        typeof (g as Record<string, unknown>).topic === 'string' &&
+        typeof (g as Record<string, unknown>).assumption === 'string' &&
+        (g as Record<string, unknown>).topic !== '' &&
+        (g as Record<string, unknown>).assumption !== '',
+    )
+    .slice(0, 5)
+    .map((g) => ({
+      id: (djb2(`guess:${g.topic}:${g.assumption}`) >>> 0).toString(16).toUpperCase(),
+      topic: g.topic,
+      assumption: g.assumption,
+    }))
+  return { outcome: p.outcome.trim(), guesses }
 }

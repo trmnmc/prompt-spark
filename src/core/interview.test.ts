@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { AiError } from './ai'
 import { addBlock, createBrief } from './brief'
 import type { ModelClient } from './interview'
-import { polish, proposeNext, writeSentence } from './interview'
+import { polish, proposeNext, sketchOutcome, writeSentence } from './interview'
 
 const T0 = 1_700_000_000_000
 const stub = (reply: string): ModelClient => ({ complete: async () => reply })
@@ -147,5 +147,54 @@ describe('polish', () => {
 
   it('falls back to the raw draft when the model returns nothing', async () => {
     expect(await polish(stub('  '), 'rough prose')).toBe('rough prose')
+  })
+})
+
+describe('sketchOutcome', () => {
+  const GOOD_SKETCH = JSON.stringify({
+    outcome: 'A single-page app with a watering dashboard. It will not include camera ID.',
+    guesses: [
+      { topic: 'Data storage', assumption: 'plant list kept in localStorage' },
+      { topic: 'Reminders', assumption: 'no notifications, dashboard only' },
+    ],
+  })
+
+  it('parses outcome and guesses, assigning stable ids', async () => {
+    const r = await sketchOutcome(stub(GOOD_SKETCH), createBrief('plants', T0))
+    expect(r.outcome).toContain('watering dashboard')
+    expect(r.guesses).toHaveLength(2)
+    expect(r.guesses[0].id).toMatch(/^[0-9A-F]+$/)
+    expect(r.guesses[0].topic).toBe('Data storage')
+    expect(r.guesses[0].id).not.toBe(r.guesses[1].id)
+  })
+
+  it('truncates guesses to five', async () => {
+    const many = JSON.stringify({
+      outcome: 'ok',
+      guesses: Array.from({ length: 8 }, (_, i) => ({ topic: `t${i}`, assumption: `a${i}` })),
+    })
+    const r = await sketchOutcome(stub(many), createBrief('x', T0))
+    expect(r.guesses).toHaveLength(5)
+  })
+
+  it('degrades missing or malformed guesses to an empty list', async () => {
+    const noGuesses = JSON.stringify({ outcome: 'still useful' })
+    expect((await sketchOutcome(stub(noGuesses), createBrief('x', T0))).guesses).toEqual([])
+    const badGuesses = JSON.stringify({ outcome: 'ok', guesses: [{ topic: 42 }, 'nope'] })
+    expect((await sketchOutcome(stub(badGuesses), createBrief('x', T0))).guesses).toEqual([])
+  })
+
+  it('rejects an empty or missing outcome as AiError', async () => {
+    await expect(
+      sketchOutcome(stub(JSON.stringify({ outcome: '  ', guesses: [] })), createBrief('x', T0)),
+    ).rejects.toBeInstanceOf(AiError)
+    await expect(sketchOutcome(stub('not json'), createBrief('x', T0))).rejects.toBeInstanceOf(
+      AiError,
+    )
+  })
+
+  it('tolerates a markdown-fenced payload', async () => {
+    const fenced = '```json\n' + GOOD_SKETCH + '\n```'
+    expect((await sketchOutcome(stub(fenced), createBrief('x', T0))).guesses).toHaveLength(2)
   })
 })
