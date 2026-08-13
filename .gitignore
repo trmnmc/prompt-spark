@@ -2,3 +2,6 @@ node_modules/
 dist/
 .gstack/
 .claude/worktrees/
+
+# brainstorming visual companion scratch
+.superpowers/
