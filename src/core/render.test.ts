@@ -17,6 +17,15 @@ describe('renderDraft', () => {
     expect(renderDraft(createBrief('a fridge app', T0))).toBe('Build a fridge app.')
   })
 
+  it('does not re-wrap a seed that is already formed prose', () => {
+    // Pack-generated seeds are complete prompts ending in punctuation —
+    // wrapping them produced "Build Build an envelope-budgeting app…".
+    expect(renderDraft(createBrief('Build a budgeting app with physics.', T0))).toBe(
+      'Build a budgeting app with physics.',
+    )
+    expect(renderDraft(createBrief('Why not a plant app?', T0))).toBe('Why not a plant app?')
+  })
+
   it('keeps the seed idea at the head once other blocks land', () => {
     const b = addBlock(createBrief('a fridge app', T0), block('wontDo', 'Leave out lists.'), T0)
     expect(renderDraft(b)).toBe('Build a fridge app. Leave out lists.')
