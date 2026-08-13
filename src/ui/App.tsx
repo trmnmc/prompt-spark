@@ -225,8 +225,16 @@ export default function App() {
 
   async function handleCopy() {
     if (!preview) return
+    // A missing clipboard API is a FAILURE, not a silent success — optional
+    // chaining alone would await undefined and claim "Copied!" without
+    // copying (the success-gated-confirmation rule from the cycle-9 review).
+    const clipboard = navigator.clipboard
+    if (!clipboard?.writeText) {
+      setNote('Copy failed — select the text manually.')
+      return
+    }
     try {
-      await navigator.clipboard?.writeText?.(preview.polished)
+      await clipboard.writeText(preview.polished)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1500)
     } catch {
@@ -306,7 +314,7 @@ export default function App() {
                 draft={draft}
                 proposal={proposal}
                 loading={loading}
-                note={note}
+                note={preview !== null ? null : note}
                 onAccept={handleAccept}
                 onAddOwn={handleAddOwn}
                 onEdit={handleEdit}

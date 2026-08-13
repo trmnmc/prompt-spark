@@ -154,6 +154,19 @@ describe('interview flow', () => {
     expect(writeText).toHaveBeenCalledWith(shown)
   })
 
+  it('renders a note exactly once when the preview is open', async () => {
+    // Break the clipboard so Copy sets the failure note while the preview
+    // is showing — the note must not render in both BoardView and the panel.
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true })
+    mount()
+    type(seedInput(), 'a leftovers app')
+    click(button('start'))
+    click(button('preview what'))
+    click(button('looks right'))
+    await act(async () => {})
+    expect(container.querySelectorAll('.ai-note')).toHaveLength(1)
+  })
+
   it('start over clears the brief and returns to the seed form', () => {
     mount()
     type(seedInput(), 'a leftovers app')
