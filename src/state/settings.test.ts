@@ -6,9 +6,9 @@ beforeEach(() => {
 })
 
 describe('settings store', () => {
-  it('defaults: AI off, opus model, empty key', () => {
+  it('defaults: AI off, opus model, empty key, no gateway', () => {
     const s = loadSettings()
-    expect(s).toEqual({ apiKey: '', model: 'claude-opus-5', aiEnabled: false })
+    expect(s).toEqual({ apiKey: '', model: 'claude-opus-5', aiEnabled: false, baseUrl: '' })
     expect(aiReady(s)).toBe(false)
   })
 
@@ -27,9 +27,28 @@ describe('settings store', () => {
     expect(loadSettings().model).toBe('claude-opus-5')
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({ model: 'gpt-9', apiKey: 42, aiEnabled: 'yes' }))
     const s = loadSettings()
-    expect(s.model).toBe('claude-opus-5')
     expect(s.apiKey).toBe('')
     expect(s.aiEnabled).toBe(false)
+    // model is deliberately NOT whitelisted any more — gateways need their
+    // own namespaced ids, so any non-empty string is kept verbatim.
+    expect(s.model).toBe('gpt-9')
+  })
+
+  it('keeps gateway-namespaced model ids but rejects blank or non-string ones', () => {
+    expect(saveSettings({ model: 'anthropic/claude-opus-5' }).model).toBe(
+      'anthropic/claude-opus-5',
+    )
+    expect(saveSettings({ model: '   ' }).model).toBe('claude-opus-5')
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ model: 42 }))
+    expect(loadSettings().model).toBe('claude-opus-5')
+  })
+
+  it('trims the gateway base URL and defaults it to empty', () => {
+    expect(saveSettings({ baseUrl: '  https://openrouter.ai/api  ' }).baseUrl).toBe(
+      'https://openrouter.ai/api',
+    )
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ baseUrl: 99 }))
+    expect(loadSettings().baseUrl).toBe('')
   })
 
   it('aiReady requires both the toggle and a non-blank key', () => {

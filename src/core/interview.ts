@@ -26,16 +26,37 @@ export interface ModelClient {
   complete(req: ModelRequest): Promise<string>
 }
 
-export function makeAnthropicClient(apiKey: string, model: AiModel): ModelClient {
+export function makeAnthropicClient(
+  apiKey: string,
+  model: AiModel,
+  baseUrl = '',
+): ModelClient {
+  const gateway = baseUrl.trim()
+  const viaGateway = gateway !== ''
+
   // BYO-key client-side app: the key is the user's own, stored only in their
   // localStorage. dangerouslyAllowBrowser acknowledges exactly that tradeoff.
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
+  const client = new Anthropic({
+    apiKey,
+    dangerouslyAllowBrowser: true,
+    ...(viaGateway
+      ? {
+          baseURL: gateway,
+          // The Anthropic SDK authenticates with an x-api-key header; most
+          // gateways expect a bearer token instead. Sending both costs
+          // nothing and means either convention is satisfied.
+          defaultHeaders: { Authorization: `Bearer ${apiKey}` },
+        }
+      : {}),
+  })
   return {
     async complete(req) {
       const response = await client.messages.create({
         model,
         max_tokens: req.maxTokens,
-        output_config: { effort: 'low' },
+        // output_config is Anthropic-specific. Gateways reject unknown
+        // top-level fields, so it only goes out on the direct path.
+        ...(viaGateway ? {} : { output_config: { effort: 'low' as const } }),
         system: req.system,
         messages: [{ role: 'user', content: req.user }],
       })

@@ -7,19 +7,34 @@ import { useSyncExternalStore } from 'react'
 
 export const SETTINGS_KEY = 'prompt-spark:settings:v1'
 
+/** Suggested models. Not a closed set — see AiModel. */
 export const AI_MODELS = ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'] as const
-export type AiModel = (typeof AI_MODELS)[number]
+
+/**
+ * Any non-empty string. Was a closed union of Anthropic ids until gateway
+ * support landed: OpenRouter and friends need their own namespaced ids
+ * (e.g. 'anthropic/claude-opus-5'), so the presets above are suggestions
+ * rather than a whitelist.
+ */
+export type AiModel = string
 
 export interface AiSettings {
   apiKey: string
   model: AiModel
   aiEnabled: boolean
+  /**
+   * Empty = talk to Anthropic directly. Set to a gateway root to route
+   * elsewhere, e.g. 'https://openrouter.ai/api' — the SDK appends
+   * '/v1/messages' itself, so do NOT include the '/v1'.
+   */
+  baseUrl: string
 }
 
 const DEFAULTS: AiSettings = {
   apiKey: '',
   model: 'claude-opus-5',
   aiEnabled: false,
+  baseUrl: '',
 }
 
 function normalize(raw: unknown): AiSettings {
@@ -27,8 +42,10 @@ function normalize(raw: unknown): AiSettings {
   const r = raw as Record<string, unknown>
   return {
     apiKey: typeof r.apiKey === 'string' ? r.apiKey : DEFAULTS.apiKey,
-    model: AI_MODELS.includes(r.model as AiModel) ? (r.model as AiModel) : DEFAULTS.model,
+    model:
+      typeof r.model === 'string' && r.model.trim() !== '' ? r.model.trim() : DEFAULTS.model,
     aiEnabled: typeof r.aiEnabled === 'boolean' ? r.aiEnabled : DEFAULTS.aiEnabled,
+    baseUrl: typeof r.baseUrl === 'string' ? r.baseUrl.trim() : DEFAULTS.baseUrl,
   }
 }
 

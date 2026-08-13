@@ -62,7 +62,10 @@ export default function App() {
     setPolished(null)
   }
   const client = useMemo(
-    () => (aiReady(settings) ? makeAnthropicClient(settings.apiKey, settings.model) : null),
+    () =>
+      aiReady(settings)
+        ? makeAnthropicClient(settings.apiKey, settings.model, settings.baseUrl)
+        : null,
     [settings],
   )
 
