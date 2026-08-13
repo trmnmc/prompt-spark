@@ -1,6 +1,12 @@
 /**
- * FROZEN Layer 1 contract for Prompt Spark — every other module builds
- * against these shapes. Do not edit after T-001 lands.
+ * Shared contract types.
+ *
+ * The former "FROZEN Layer 1 contract — do not edit after T-001 lands" header
+ * was a constraint of the overnight parallel build, where many agents needed a
+ * stable target to compile against. It was never meant as a permanent rule.
+ * The 2026-08-10 interview-board design supersedes it: Filters, Difficulty and
+ * GeneratedPrompt now serve only cold-start generation, and Brief/Block in
+ * ./brief.ts are the live model.
  */
 
 export type Subject = 'realEstate' | 'law' | 'finance' | 'science'
