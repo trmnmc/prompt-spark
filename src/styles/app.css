@@ -312,3 +312,18 @@
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap;
 }
+
+/*
+ * .app-main is a column flexbox with align-items:center, which makes children
+ * shrink to their content width instead of stretching. The board and seed form
+ * are full-width layouts, so they opt out explicitly — otherwise the seed form
+ * collapses to the width of its button row and the idea field is unreadable.
+ */
+.board,
+.seed-form {
+  align-self: stretch;
+  width: 100%;
+  max-width: 46rem;
+  margin-inline: auto;
+}
+.seed-input { min-height: 44px; font-size: var(--text-lg); }
