@@ -21,7 +21,7 @@ const guesses = [
 ]
 const base = {
   polished: 'Build the plant app.',
-  outcome: 'One dashboard screen. It will not include camera ID.',
+  outcome: 'One dashboard screen. It will not include camera ID.' as string | null,
   guesses,
   note: null as string | null,
   onCopy: () => {},

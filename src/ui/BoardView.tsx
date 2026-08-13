@@ -104,11 +104,9 @@ export default function BoardView({
         </button>
       )}
 
-      {brief.blocks.length > 0 && (
-        <button type="button" className="action-btn finish-btn" onClick={onFinish}>
-          Finish &amp; polish
-        </button>
-      )}
+      <button type="button" className="action-btn finish-btn" onClick={onFinish}>
+        Preview what you'll get
+      </button>
     </section>
   )
 }

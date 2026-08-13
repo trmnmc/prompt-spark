@@ -1,6 +1,6 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearBrief } from '../state/briefStore'
 import { SETTINGS_KEY } from '../state/settings'
@@ -114,23 +114,44 @@ describe('interview flow', () => {
     expect(draftText()).toContain('a leftovers app')
   })
 
-  it('editing after a polish drops the now-stale polished text', () => {
+  it('preview gate: Copy exists only on the preview, and mutations drop it', () => {
     mount()
     type(seedInput(), 'a leftovers app')
     click(button('start'))
+    // No copy affordance anywhere before previewing:
+    expect(
+      Array.from(container.querySelectorAll('button')).some((b) =>
+        (b.textContent ?? '').toLowerCase().includes('copy'),
+      ),
+    ).toBe(false)
+    click(button('preview what'))
+    expect(container.querySelector('[data-testid="preview"]')).toBeTruthy()
+    expect(button('looks right')).toBeTruthy()
+    // No-key path: prompt slot holds the raw draft, no outcome, no chips:
+    expect(container.querySelector('[data-testid="preview-prompt"]')?.textContent).toContain(
+      'a leftovers app',
+    )
+    expect(container.querySelector('[data-testid="preview-outcome"]')).toBeNull()
+    // Mutation drops the preview and its Copy:
     click(button('add a block'))
     const inputs = container.querySelectorAll<HTMLInputElement>('.add-block input')
     type(inputs[0], 'Budget')
-    type(inputs[1], 'under $10 a month')
+    type(inputs[1], 'cheap')
     click(button('add'))
+    expect(container.querySelector('[data-testid="preview"]')).toBeNull()
+  })
 
-    click(button('finish'))
-    expect(container.querySelector('[data-testid="polished"]')).toBeTruthy()
-
-    // Removing a block invalidates the polish — otherwise two contradictory
-    // prompts sit on screen at once.
-    click(button('remove'))
-    expect(container.querySelector('[data-testid="polished"]')).toBeNull()
+  it('copy puts exactly the previewed text on the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    mount()
+    type(seedInput(), 'a leftovers app')
+    click(button('start'))
+    click(button('preview what'))
+    const shown = container.querySelector('[data-testid="preview-prompt"]')?.textContent
+    click(button('looks right'))
+    await act(async () => {})
+    expect(writeText).toHaveBeenCalledWith(shown)
   })
 
   it('start over clears the brief and returns to the seed form', () => {

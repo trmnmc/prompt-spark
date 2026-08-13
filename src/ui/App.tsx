@@ -12,17 +12,38 @@ import {
   type Proposal,
 } from '../core/brief'
 import { generate } from '../core/generate'
-import { makeAnthropicClient, polish, proposeNext, writeSentence } from '../core/interview'
+import {
+  chipToProposal,
+  makeAnthropicClient,
+  polish,
+  proposeNext,
+  sketchOutcome,
+  writeSentence,
+  type Guess,
+} from '../core/interview'
 import { renderDraft, templateSentence } from '../core/render'
 import { clearBrief, saveBrief, useBrief } from '../state/briefStore'
 import { aiReady, useSettings } from '../state/settings'
 import '../styles/app.css'
 import BoardView from './BoardView'
 import FavoritesView from './FavoritesView'
+import PreviewPanel from './PreviewPanel'
 import SeedForm from './SeedForm'
 import SettingsPanel from './SettingsPanel'
 
 type View = 'interview' | 'favorites'
+
+/**
+ * The preview gate's ephemeral state. Deliberately NOT persisted: a preview
+ * describes the brief at briefUpdatedAt, and the render guard hides it the
+ * moment the brief moves on. Re-previewing is two cheap calls.
+ */
+interface PreviewState {
+  polished: string
+  outcome: string | null
+  guesses: Guess[]
+  briefUpdatedAt: number
+}
 
 const TABS: { value: View; label: string }[] = [
   { value: 'interview', label: 'Interview' },
@@ -40,7 +61,8 @@ export default function App() {
   const [proposal, setProposal] = useState<Proposal | null>(null)
   const [loading, setLoading] = useState(false)
   const [note, setNote] = useState<string | null>(null)
-  const [polished, setPolished] = useState<string | null>(null)
+  const [preview, setPreview] = useState<PreviewState | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const settings = useSettings()
   const brief = useBrief()
@@ -59,7 +81,7 @@ export default function App() {
    */
   function commit(next: Brief) {
     saveBrief(next)
-    setPolished(null)
+    setPreview(null)
   }
   const client = useMemo(
     () =>
@@ -95,7 +117,7 @@ export default function App() {
     const fresh = createBrief(idea, Date.now())
     saveBrief(fresh)
     setProposal(null)
-    setPolished(null)
+    setPreview(null)
     setNote(null)
     void askNext(fresh)
   }
@@ -174,18 +196,61 @@ export default function App() {
 
   async function handleFinish() {
     if (!brief) return
+    const mine = ++ticket.current
     if (client === null) {
-      setPolished(draft)
+      setPreview({ polished: draft, outcome: null, guesses: [], briefUpdatedAt: brief.updatedAt })
       return
     }
+    setLoading(true)
+    setNote(null)
+    // Polish and sketch are independent — run them together; each degrades alone.
+    const [polishR, sketchR] = await Promise.allSettled([
+      polish(client, draft),
+      sketchOutcome(client, brief),
+    ])
+    if (mine !== ticket.current) return
+    const polished = polishR.status === 'fulfilled' ? polishR.value : draft
+    const outcome = sketchR.status === 'fulfilled' ? sketchR.value.outcome : null
+    const guesses = sketchR.status === 'fulfilled' ? sketchR.value.guesses : []
+    if (polishR.status === 'rejected' && sketchR.status === 'rejected') {
+      setNote('Preview generation failed — showing the raw draft.')
+    } else if (polishR.status === 'rejected') {
+      setNote('Polish unavailable — this is the unpolished draft.')
+    } else if (sketchR.status === 'rejected') {
+      setNote('Outcome sketch unavailable.')
+    }
+    setPreview({ polished, outcome, guesses, briefUpdatedAt: brief.updatedAt })
+    setLoading(false)
+  }
+
+  async function handleCopy() {
+    if (!preview) return
+    try {
+      await navigator.clipboard?.writeText?.(preview.polished)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      setNote('Copy failed — select the text manually.')
+    }
+  }
+
+  async function handlePin(guess: Guess) {
+    if (!brief || client === null) return
     const mine = ++ticket.current
     setLoading(true)
     try {
-      const smoothed = await polish(client, draft)
+      const p = await chipToProposal(client, brief, guess)
       if (mine !== ticket.current) return
-      setPolished(smoothed)
-    } catch {
-      if (mine === ticket.current) setPolished(draft)
+      setProposal(p)
+      // Pinning re-opens the interview; the preview is now provisional.
+      // (Deliberate spec deviation: keeping a stale preview up while the
+      // user answers recreates the two-contradictory-artifacts problem
+      // the gate exists to prevent.)
+      setPreview(null)
+    } catch (e) {
+      if (mine !== ticket.current) return
+      const err = e instanceof AiError ? e : new AiError('Unexpected error.', true)
+      setNote(err.message)
     } finally {
       if (mine === ticket.current) setLoading(false)
     }
@@ -195,7 +260,7 @@ export default function App() {
     ticket.current++
     clearBrief()
     setProposal(null)
-    setPolished(null)
+    setPreview(null)
     setNote(null)
     setLoading(false)
   }
@@ -249,13 +314,17 @@ export default function App() {
                 onMove={handleMove}
                 onFinish={handleFinish}
               />
-              {polished !== null && (
-                <div className="polished-panel">
-                  <span className="label">Polished</span>
-                  <p className="draft" data-testid="polished">
-                    {polished}
-                  </p>
-                </div>
+              {preview !== null && preview.briefUpdatedAt === brief.updatedAt && (
+                <PreviewPanel
+                  polished={preview.polished}
+                  outcome={preview.outcome}
+                  guesses={preview.guesses}
+                  note={note}
+                  copied={copied}
+                  onCopy={handleCopy}
+                  onBack={() => setPreview(null)}
+                  onPin={handlePin}
+                />
               )}
               <button type="button" className="action-btn" onClick={handleStartOver}>
                 Start over
