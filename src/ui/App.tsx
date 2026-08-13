@@ -1,24 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
-import { aiGenerate, aiScout, AiError } from '../core/ai'
-import { expand } from '../core/brainScout'
+import { AiError } from '../core/ai'
+import {
+  addBlock,
+  createBrief,
+  editBlock,
+  moveBlock,
+  removeBlock,
+  type BlockKind,
+  type Brief,
+  type Proposal,
+} from '../core/brief'
 import { generate } from '../core/generate'
-import { decodeShare, encodeShare } from '../core/share'
-import type { Filters, GeneratedPrompt, ScoutResult } from '../core/types'
+import { makeAnthropicClient, polish, proposeNext, writeSentence } from '../core/interview'
+import { renderDraft, templateSentence } from '../core/render'
+import { clearBrief, saveBrief, useBrief } from '../state/briefStore'
 import { aiReady, useSettings } from '../state/settings'
 import '../styles/app.css'
-import FilterBar from './FilterBar'
-import PromptCard from './PromptCard'
-import SettingsPanel from './SettingsPanel'
-import SurpriseHero from './SurpriseHero'
-import BrainScoutView from './BrainScoutView'
+import BoardView from './BoardView'
 import FavoritesView from './FavoritesView'
+import SeedForm from './SeedForm'
+import SettingsPanel from './SettingsPanel'
 
-type View = 'generator' | 'scout' | 'favorites'
+type View = 'interview' | 'favorites'
 
 const TABS: { value: View; label: string }[] = [
-  { value: 'generator', label: 'Generator' },
-  { value: 'scout', label: 'Brain Scout' },
+  { value: 'interview', label: 'Interview' },
   { value: 'favorites', label: 'Favorites' },
 ]
 
@@ -28,154 +35,156 @@ function randomSeed(): number {
 }
 
 export default function App() {
-  // Bootstrap from a share link on first mount: a valid ?seed=&subject=
-  // etc. query string reproduces the exact shared prompt (generate() is
-  // memoized on seed+filters, so decoding the same pair renders a
-  // string-identical result). Absent/invalid query -> normal empty state.
-  const [seed, setSeed] = useState<number | null>(() => decodeShare(window.location.search)?.seed ?? null)
-  const [filters, setFiltersState] = useState<Filters>(() => decodeShare(window.location.search)?.filters ?? {})
-  const [view, setView] = useState<View>('generator')
-  const [linkCopied, setLinkCopied] = useState(false)
+  const [view, setView] = useState<View>('interview')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [proposal, setProposal] = useState<Proposal | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const [polished, setPolished] = useState<string | null>(null)
 
   const settings = useSettings()
+  const brief = useBrief()
 
-  // AI-mode generator state. When an AI prompt is present it wins over the
-  // template prompt; template mode stays the always-working fallback.
-  const [aiPrompt, setAiPrompt] = useState<GeneratedPrompt | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiNote, setAiNote] = useState<string | null>(null)
-  // Ignore results from superseded sparks (rapid double-taps, settings flips).
-  const sparkCounter = useRef(0)
+  // Every model call takes a ticket. A result whose ticket is stale — because
+  // the user moved on, or flipped key/model mid-flight — is dropped rather
+  // than landing in the board (the cycle-9 in-flight invalidation finding).
+  const ticket = useRef(0)
 
-  // Scout state lives HERE (not in BrainScoutView) so tab switches can't
-  // unmount the in-flight bookkeeping: a stale promise resolving after an
-  // unmount/remount must still lose to the current ticket (reviewer finding).
-  const [scoutPhrase, setScoutPhrase] = useState('')
-  const [scoutResult, setScoutResult] = useState<ScoutResult | null>(null)
-  const [scoutLoading, setScoutLoading] = useState(false)
-  const [scoutNote, setScoutNote] = useState<string | null>(null)
-  const scoutCounter = useRef(0)
-
-  // Flipping AI mode / key / model mid-flight invalidates every pending
-  // call — a late result from the old configuration must not land.
-  const aiConfig = `${settings.aiEnabled}|${settings.apiKey}|${settings.model}`
-  useEffect(() => {
-    sparkCounter.current++
-    scoutCounter.current++
-    setAiLoading(false)
-    setScoutLoading(false)
-  }, [aiConfig])
-
-  // Pure downstream of seed + filters — generate() itself never touches
-  // Math.random; randomness lives only at the UI boundary.
-  const templatePrompt = useMemo(
-    () => (seed == null ? undefined : generate(seed, filters)),
-    [seed, filters],
+  const draft = useMemo(() => (brief ? renderDraft(brief) : ''), [brief])
+  const client = useMemo(
+    () => (aiReady(settings) ? makeAnthropicClient(settings.apiKey, settings.model) : null),
+    [settings],
   )
-  const prompt = aiPrompt ?? templatePrompt
 
-  // Changing filters invalidates a displayed AI prompt — its subject/
-  // difficulty chips may contradict the newly active filter (reviewer
-  // finding). Template mode regenerates from the memo automatically.
-  function setFilters(next: Filters) {
-    setFiltersState(next)
-    if (aiPrompt != null) {
-      sparkCounter.current++
-      setAiPrompt(null)
-      setAiNote(null)
-      setAiLoading(false)
-    }
-  }
-
-  // Keep the address bar in sync with what's actually on screen. AI prompts
-  // aren't seed-reproducible, so while one is displayed the query string is
-  // CLEARED — otherwise copying the address bar would share the previous
-  // template prompt (reviewer finding).
-  useEffect(() => {
-    if (aiPrompt != null) {
-      window.history.replaceState(null, '', `${window.location.pathname}${window.location.hash}`)
+  async function askNext(current: Brief) {
+    if (client === null) {
+      setProposal(null)
       return
     }
-    if (seed == null) return
-    const qs = encodeShare({ seed, filters })
-    const url = `${window.location.pathname}?${qs}${window.location.hash}`
-    window.history.replaceState(null, '', url)
-  }, [seed, filters, aiPrompt])
-
-  function sparkTemplate() {
-    setAiPrompt(null)
-    setSeed(randomSeed())
-    setLinkCopied(false)
-  }
-
-  async function handleSpark() {
-    setAiNote(null)
-    if (!aiReady(settings)) {
-      sparkTemplate()
-      return
-    }
-    const ticket = ++sparkCounter.current
-    setAiLoading(true)
+    const mine = ++ticket.current
+    setLoading(true)
+    setNote(null)
     try {
-      const p = await aiGenerate(settings.apiKey, settings.model, filters)
-      if (ticket !== sparkCounter.current) return
-      setAiPrompt(p)
-      setLinkCopied(false)
+      const next = await proposeNext(client, current)
+      if (mine !== ticket.current) return
+      setProposal(next)
     } catch (e) {
-      if (ticket !== sparkCounter.current) return
+      if (mine !== ticket.current) return
       const err = e instanceof AiError ? e : new AiError('Unexpected error.', true)
-      setAiNote(
-        err.recoverable ? `${err.message} Showing a template prompt instead.` : err.message,
-      )
-      if (err.recoverable) sparkTemplate()
+      setNote(`${err.message} You can still add blocks yourself.`)
+      setProposal(null)
     } finally {
-      if (ticket === sparkCounter.current) setAiLoading(false)
+      if (mine === ticket.current) setLoading(false)
     }
   }
 
-  async function handleScout(rawPhrase: string) {
-    // Trim before anything else: aiScout's verbatim-containment invariant
-    // would near-deterministically fail on trailing whitespace (reviewer
-    // finding), burning an API call for nothing.
-    const seedPhrase = rawPhrase.trim()
-    if (seedPhrase === '' || scoutLoading) return
-    setScoutNote(null)
-    if (!aiReady(settings)) {
-      setScoutResult(expand(seedPhrase, randomSeed()))
-      return
-    }
-    const ticket = ++scoutCounter.current
-    setScoutLoading(true)
-    try {
-      const r = await aiScout(settings.apiKey, settings.model, seedPhrase)
-      if (ticket !== scoutCounter.current) return
-      setScoutResult(r)
-    } catch (e) {
-      if (ticket !== scoutCounter.current) return
-      const err = e instanceof AiError ? e : new AiError('Unexpected error.', true)
-      setScoutNote(
-        err.recoverable ? `${err.message} Showing a template expansion instead.` : err.message,
-      )
-      if (err.recoverable) setScoutResult(expand(seedPhrase, randomSeed()))
-    } finally {
-      if (ticket === scoutCounter.current) setScoutLoading(false)
-    }
+  function handleStart(idea: string) {
+    const fresh = createBrief(idea, Date.now())
+    saveBrief(fresh)
+    setProposal(null)
+    setPolished(null)
+    setNote(null)
+    void askNext(fresh)
   }
 
-  async function handleCopyShareLink() {
-    if (seed == null || aiPrompt != null) return
-    const qs = encodeShare({ seed, filters })
-    const url = `${window.location.origin}${window.location.pathname}?${qs}`
-    const clipboard = navigator.clipboard
-    if (clipboard?.writeText) {
+  function handleSurprise(): string {
+    return generate(randomSeed(), {}).text
+  }
+
+  async function handleAccept(option: string) {
+    if (!brief || !proposal) return
+    const mine = ++ticket.current
+    setLoading(true)
+    // Template sentence is the floor; with a key the model writes it properly.
+    let sentence = templateSentence(proposal.kind, proposal.label, option)
+    if (client !== null) {
       try {
-        await clipboard.writeText(url)
-      } catch {
-        // Write can fail (permissions, unsupported); still surface feedback.
+        sentence = await writeSentence(client, brief, proposal.kind, proposal.label, option)
+      } catch (e) {
+        const err = e instanceof AiError ? e : new AiError('Unexpected error.', true)
+        setNote(`${err.message} Used a plain sentence instead.`)
       }
     }
-    setLinkCopied(true)
+    if (mine !== ticket.current) return
+    const next = addBlock(
+      brief,
+      {
+        kind: proposal.kind,
+        label: proposal.label,
+        question: proposal.question,
+        answer: option,
+        sentence,
+      },
+      Date.now(),
+    )
+    saveBrief(next)
+    setProposal(null)
+    setLoading(false)
+    void askNext(next)
+  }
+
+  function handleAddOwn(label: string, answer: string) {
+    if (!brief) return
+    const kind: BlockKind = 'custom'
+    saveBrief(
+      addBlock(
+        brief,
+        { kind, label, question: null, answer, sentence: templateSentence(kind, label, answer) },
+        Date.now(),
+      ),
+    )
+  }
+
+  function handleEdit(id: string, answer: string) {
+    if (!brief) return
+    const block = brief.blocks.find((b) => b.id === id)
+    if (!block) return
+    saveBrief(
+      editBlock(
+        brief,
+        id,
+        { answer, sentence: templateSentence(block.kind, block.label, answer) },
+        Date.now(),
+      ),
+    )
+  }
+
+  function handleRemove(id: string) {
+    if (!brief) return
+    saveBrief(removeBlock(brief, id, Date.now()))
+  }
+
+  function handleMove(id: string, toIndex: number) {
+    if (!brief) return
+    saveBrief(moveBlock(brief, id, toIndex, Date.now()))
+  }
+
+  async function handleFinish() {
+    if (!brief) return
+    if (client === null) {
+      setPolished(draft)
+      return
+    }
+    const mine = ++ticket.current
+    setLoading(true)
+    try {
+      const smoothed = await polish(client, draft)
+      if (mine !== ticket.current) return
+      setPolished(smoothed)
+    } catch {
+      if (mine === ticket.current) setPolished(draft)
+    } finally {
+      if (mine === ticket.current) setLoading(false)
+    }
+  }
+
+  function handleStartOver() {
+    ticket.current++
+    clearBrief()
+    setProposal(null)
+    setPolished(null)
+    setNote(null)
+    setLoading(false)
   }
 
   return (
@@ -209,31 +218,37 @@ export default function App() {
       </nav>
 
       <main className="app-main">
-        {view === 'generator' && (
-          <>
-            <SurpriseHero onSpark={handleSpark} loading={aiLoading} />
-            <FilterBar filters={filters} onChange={setFilters} />
-            {aiNote && <p className="ai-note">{aiNote}</p>}
-            <PromptCard prompt={prompt} />
-            {prompt && aiPrompt == null && (
-              <div className="share-link-row">
-                <button type="button" className="share-link-button action-btn" onClick={handleCopyShareLink}>
-                  {linkCopied ? 'Link copied!' : 'Copy share link \u{1F517}'}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-        {view === 'scout' && (
-          <BrainScoutView
-            phrase={scoutPhrase}
-            onPhraseChange={setScoutPhrase}
-            result={scoutResult}
-            loading={scoutLoading}
-            note={scoutNote}
-            onScout={handleScout}
-          />
-        )}
+        {view === 'interview' &&
+          (brief === null ? (
+            <SeedForm onStart={handleStart} onSurprise={handleSurprise} />
+          ) : (
+            <>
+              <BoardView
+                brief={brief}
+                draft={draft}
+                proposal={proposal}
+                loading={loading}
+                note={note}
+                onAccept={handleAccept}
+                onAddOwn={handleAddOwn}
+                onEdit={handleEdit}
+                onRemove={handleRemove}
+                onMove={handleMove}
+                onFinish={handleFinish}
+              />
+              {polished !== null && (
+                <div className="polished-panel">
+                  <span className="label">Polished</span>
+                  <p className="draft" data-testid="polished">
+                    {polished}
+                  </p>
+                </div>
+              )}
+              <button type="button" className="action-btn" onClick={handleStartOver}>
+                Start over
+              </button>
+            </>
+          ))}
         {view === 'favorites' && <FavoritesView />}
       </main>
     </div>
