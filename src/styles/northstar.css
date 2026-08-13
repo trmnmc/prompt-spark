@@ -1,0 +1,326 @@
+/*
+ * Northstar design tokens — extracted verbatim from the Claude Design mockup
+ * "Northstar Flow.dc.html" (project 4fa67c5a). Colours are the mockup's own
+ * hex values, not approximations, so the React build matches the source.
+ */
+:root {
+  --ns-green: #1f6f54;
+  --ns-green-dark: #14503c;
+  --ns-green-bright: #4fae8c;
+  --ns-green-tint: #eef6f1;
+  --ns-green-tint-2: #e7f2ec;
+  --ns-green-border: #bcd9cc;
+  --ns-green-deep: #2e4a3e;
+
+  --ns-ink: #1c1e21;
+  --ns-ink-2: #3a3c38;
+  --ns-muted: #6b7066;
+  --ns-muted-2: #8a897f;
+  --ns-faint: #9a998f;
+
+  --ns-canvas: #e3e1d8;
+  --ns-surface: #f6f5f0;
+  --ns-surface-2: #f0efe8;
+  --ns-surface-3: #eceae3;
+  --ns-line: #cfd0c8;
+  --ns-line-2: #c9c8bf;
+  --ns-line-3: #e8e6df;
+
+  --ns-amber: #b4690e;
+  --ns-amber-dark: #925708;
+
+  --ns-r-sm: 4px;
+  --ns-r: 7px;
+  --ns-r-md: 9px;
+  --ns-r-lg: 10px;
+
+  --ns-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --ns-sans: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+}
+
+.ns-app {
+  min-height: 100vh;
+  background: var(--ns-surface);
+  color: var(--ns-ink);
+  font-family: var(--ns-sans);
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ns-label {
+  font-family: var(--ns-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ns-muted);
+  text-transform: uppercase;
+}
+
+/* ── compass rail ─────────────────────────────────────────── */
+.ns-rail {
+  border-bottom: 1px solid var(--ns-line);
+  background: var(--ns-surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.ns-rail-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--ns-line-3);
+}
+.ns-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ns-green);
+  color: #fff;
+  font-family: var(--ns-mono);
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.ns-crumb {
+  font-size: 13px;
+  color: var(--ns-ink-2);
+}
+.ns-crumb strong {
+  font-weight: 600;
+}
+.ns-guidance {
+  margin-left: auto;
+  font-family: var(--ns-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ns-muted-2);
+}
+
+.ns-steps {
+  display: flex;
+  gap: 6px;
+  padding: 10px 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ns-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ns-faint);
+  padding: 4px 10px;
+  border-radius: var(--ns-r-sm);
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: default;
+}
+.ns-step--done {
+  color: var(--ns-green);
+}
+.ns-step--current {
+  color: var(--ns-ink);
+  background: var(--ns-green-tint);
+  border: 1px solid var(--ns-green-border);
+  font-weight: 600;
+}
+.ns-step--clickable {
+  cursor: pointer;
+}
+.ns-step--clickable:hover {
+  background: var(--ns-surface-3);
+}
+.ns-step-num {
+  font-family: var(--ns-mono);
+  font-size: 10px;
+}
+
+.ns-ahead {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 20px 12px;
+  border-top: 1px dashed var(--ns-line-3);
+  background: var(--ns-surface-2);
+}
+.ns-ahead-text {
+  font-size: 12.5px;
+  color: var(--ns-muted);
+  line-height: 1.5;
+}
+
+/* ── main body ────────────────────────────────────────────── */
+.ns-body {
+  flex: 1;
+  padding: 28px 20px 120px;
+  max-width: 900px;
+  width: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+.ns-h {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 6px 0 6px;
+  line-height: 1.3;
+}
+.ns-sub {
+  color: var(--ns-muted);
+  line-height: 1.55;
+  margin: 0 0 18px;
+}
+
+.ns-card {
+  background: #fff;
+  border: 1px solid var(--ns-line);
+  border-radius: var(--ns-r-lg);
+  padding: 18px;
+}
+
+.ns-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120px;
+  padding: 12px 14px;
+  border: 1px solid var(--ns-line);
+  border-radius: var(--ns-r);
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  line-height: 1.6;
+  resize: vertical;
+}
+.ns-textarea:focus {
+  outline: 2px solid var(--ns-green-border);
+  border-color: var(--ns-green);
+}
+
+.ns-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.ns-chip {
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: var(--ns-r-sm);
+  background: var(--ns-surface-3);
+  border: 1px solid var(--ns-line-3);
+  color: var(--ns-muted);
+}
+
+/* ── the contract card ────────────────────────────────────── */
+.ns-contract {
+  background: var(--ns-green-tint);
+  border: 1px solid var(--ns-green-border);
+  border-radius: var(--ns-r-lg);
+  padding: 16px 18px;
+  margin-top: 18px;
+}
+.ns-contract ol {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--ns-green-deep);
+  line-height: 1.7;
+  font-size: 13px;
+}
+
+/* ── buttons ──────────────────────────────────────────────── */
+.ns-btn {
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: var(--ns-r);
+  border: 1px solid var(--ns-line-2);
+  background: #fff;
+  color: var(--ns-ink);
+  cursor: pointer;
+}
+.ns-btn:hover:not(:disabled) {
+  background: var(--ns-surface-3);
+}
+.ns-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ns-btn--primary {
+  background: var(--ns-green);
+  border-color: var(--ns-green);
+  color: #fff;
+}
+.ns-btn--primary:hover:not(:disabled) {
+  background: var(--ns-green-dark);
+}
+.ns-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+/* ── copilot dock ─────────────────────────────────────────── */
+.ns-copilot {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: min(340px, calc(100vw - 32px));
+  background: #fff;
+  border: 1px solid var(--ns-line);
+  border-radius: var(--ns-r-lg);
+  box-shadow: 0 4px 18px rgba(28, 30, 33, 0.12);
+  z-index: 20;
+}
+.ns-copilot-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--ns-line-3);
+  cursor: pointer;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+}
+.ns-copilot-body {
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ns-ink-2);
+}
+.ns-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ns-green-bright);
+}
+.ns-dot--thinking {
+  animation: ns-pulse 1.2s ease-in-out infinite;
+}
+@keyframes ns-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.ns-note {
+  font-size: 13px;
+  color: var(--ns-amber-dark);
+  background: #fdf6ec;
+  border: 1px solid #f0dcc0;
+  border-radius: var(--ns-r);
+  padding: 9px 12px;
+  margin: 0 0 14px;
+}
