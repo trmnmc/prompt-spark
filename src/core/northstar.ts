@@ -194,6 +194,31 @@ export function orphanTasks(p: Project): Task[] {
   return p.tasks.filter((t) => !ids.has(t.section))
 }
 
+/** Simulated wall-clock cost of one task. */
+export const TASK_MS = 3200
+
+/**
+ * Build state as a pure function of elapsed build time.
+ *
+ * Deriving from the clock rather than counting timer ticks matters: browsers
+ * throttle timers in hidden tabs, and the design explicitly promises "you can
+ * close this tab". Counting ticks would freeze the build the moment you did;
+ * this catches up instead.
+ */
+export function buildProgress(tasks: Task[], elapsedMs: number): Task[] {
+  return tasks.map((t, i) => {
+    const pct = Math.round(((elapsedMs - i * TASK_MS) / TASK_MS) * 100)
+    const progress = Math.max(0, Math.min(100, pct))
+    const status: TaskStatus = progress >= 100 ? 'done' : progress > 0 ? 'running' : 'queued'
+    return { ...t, status, progress }
+  })
+}
+
+/** True once every task has had its full share of build time. */
+export function buildComplete(tasks: Task[], elapsedMs: number): boolean {
+  return tasks.length > 0 && elapsedMs >= tasks.length * TASK_MS
+}
+
 /**
  * The compass line: what's ahead, phrased as the design does — one sentence
  * naming the next commitment, never a bare step name.

@@ -88,19 +88,78 @@ describe('Northstar shell', () => {
     expect(textarea().value.length).toBeGreaterThan(40)
   })
 
-  it('is honest that later screens are not built yet', () => {
+  it('lands on Clarify with a real question and its reasoning', async () => {
     typeInto(textarea(), 'A private portal where clients review and approve deliverables.')
     click(button('start scaffolding'))
-    expect(container.querySelector('[data-testid="not-built"]')).toBeTruthy()
-    expect(container.textContent).toContain('A private portal where clients review')
+    await act(async () => {})
+    expect(container.querySelector('[data-testid="screen-clarify"]')).toBeTruthy()
+    const q = container.querySelector('[data-testid="question"]')?.textContent ?? ''
+    expect(q).toContain('Why I’m asking')
+    expect(container.querySelectorAll('[data-testid="option"]').length).toBeGreaterThanOrEqual(2)
   })
 
-  it('opens the copilot with advice once a project exists', () => {
+  it('records an answer with what it shaped, then asks the next question', async () => {
+    typeInto(textarea(), 'A private portal where clients review and approve deliverables.')
+    click(button('start scaffolding'))
+    await act(async () => {})
+    click(container.querySelectorAll('[data-testid="option"]')[0])
+    await act(async () => {})
+    const answered = container.querySelector('[data-testid="answered"]')?.textContent ?? ''
+    expect(answered).toContain('shaped:')
+    expect(container.querySelector('[data-testid="question"]')).toBeTruthy()
+  })
+
+  it('opens the copilot with advice once a project exists', async () => {
     expect(container.querySelector('[data-testid="copilot"]')).toBeNull()
     typeInto(textarea(), 'A private portal where clients review and approve deliverables.')
     click(button('start scaffolding'))
+    await act(async () => {})
     expect(container.querySelector('[data-testid="copilot-body"]')?.textContent).toContain(
       'questions that would change',
+    )
+  })
+
+  it('walks the whole flow to handoff without a key', async () => {
+    typeInto(textarea(), 'A private portal where clients review and approve deliverables.')
+    click(button('start scaffolding'))
+    await act(async () => {})
+
+    // Answer every clarifying question the built-in bank offers.
+    for (let i = 0; i < 6; i++) {
+      const opt = container.querySelectorAll('[data-testid="option"]')[0]
+      if (!opt) break
+      click(opt)
+      await act(async () => {})
+    }
+
+    // Capability check → accept scope
+    expect(container.querySelector('[data-testid="screen-capability"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="cap-out"]')).toBeTruthy()
+    click(button('accept scope'))
+    await act(async () => {})
+
+    // Decisions → choose the first option of each
+    expect(container.querySelector('[data-testid="screen-decisions"]')).toBeTruthy()
+    const decisions = Array.from(container.querySelectorAll('[data-testid="decision"]'))
+    for (const d of decisions) {
+      click(d.querySelectorAll('[data-testid="decision-option"]')[0])
+      await act(async () => {})
+    }
+    click(button('continue'))
+    await act(async () => {})
+
+    // Plan: every task maps to a section, so no orphan warning and lock is enabled
+    expect(container.querySelector('[data-testid="screen-plan"]')).toBeTruthy()
+    expect(container.querySelectorAll('[data-testid="spec-section"]').length).toBeGreaterThan(2)
+    expect(container.querySelector('[data-testid="orphan-warning"]')).toBeNull()
+    expect(button('send to swarm').disabled).toBe(false)
+    click(button('send to swarm'))
+    await act(async () => {})
+
+    // Build screen admits it is simulated
+    expect(container.querySelector('[data-testid="screen-build"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="sim-banner"]')?.textContent).toContain(
+      'no swarm attached',
     )
   })
 })

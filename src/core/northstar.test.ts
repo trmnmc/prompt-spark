@@ -13,6 +13,9 @@ import {
   setDecisions,
   setPlan,
   STAGES,
+  TASK_MS,
+  buildComplete,
+  buildProgress,
   type Decision,
   type Question,
   type SpecSection,
@@ -134,6 +137,50 @@ describe('no orphan work', () => {
   it('is empty when every task maps to a section', () => {
     const p = setPlan(createProject('x', T0), [section('§1')], [task('t1', '§1')], T0)
     expect(orphanTasks(p)).toEqual([])
+  })
+})
+
+describe('build progress is a pure function of elapsed time', () => {
+  const three = [task('t1', '§1'), task('t2', '§1'), task('t3', '§1')]
+
+  it('has everything queued at zero', () => {
+    expect(buildProgress(three, 0).map((t) => t.status)).toEqual(['queued', 'queued', 'queued'])
+  })
+
+  it('runs the first task partway through its slice', () => {
+    const [a, b] = buildProgress(three, TASK_MS / 2)
+    expect(a.status).toBe('running')
+    expect(a.progress).toBe(50)
+    expect(b.status).toBe('queued')
+  })
+
+  it('completes tasks in order as time passes', () => {
+    expect(buildProgress(three, TASK_MS * 2).map((t) => t.status)).toEqual([
+      'done',
+      'done',
+      'queued',
+    ])
+  })
+
+  it('catches up after a throttled gap instead of losing progress', () => {
+    // A hidden tab may deliver no ticks at all; jumping straight to the end
+    // must still produce a finished build, not a stalled one.
+    expect(buildProgress(three, TASK_MS * 99).every((t) => t.status === 'done')).toBe(true)
+  })
+
+  it('never reports negative or over-100 progress', () => {
+    for (const ms of [-5000, 0, 1, TASK_MS * 3, TASK_MS * 100]) {
+      for (const t of buildProgress(three, ms)) {
+        expect(t.progress).toBeGreaterThanOrEqual(0)
+        expect(t.progress).toBeLessThanOrEqual(100)
+      }
+    }
+  })
+
+  it('knows when the build is complete', () => {
+    expect(buildComplete(three, TASK_MS * 3 - 1)).toBe(false)
+    expect(buildComplete(three, TASK_MS * 3)).toBe(true)
+    expect(buildComplete([], 999_999)).toBe(false)
   })
 })
 
