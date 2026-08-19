@@ -6,3 +6,7 @@ dist/
 # brainstorming visual companion scratch
 .superpowers/
 .tsbuild/
+
+# single-file showcase builds copied into the SWARM site
+dist-single/
+dist-northstar/
